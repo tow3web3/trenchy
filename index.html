@@ -614,7 +614,51 @@ const mintAuth=heliusData.token_info?.mint_authority;
 if(mintAuth)html+='<span class="white">Mint Auth:</span>   <span class="danger">EXISTS — '+mintAuth.slice(0,8)+'...</span><br>';
 else html+='<span class="white">Mint Auth:</span>   <span class="val">Renounced ✓</span><br>';
 }else{html+='<span class="dim">No Helius asset data returned.</span><br>'}
-html+='<br><span class="prompt">$</span> <span class="dim">_</span>';
+// AI Analysis step
+out.innerHTML=html+'<br><span class="dim">[+] Running Trenchee AI analysis...</span>';
+try{
+const aiData=[];
+if(dexData)aiData.push('DexScreener: '+JSON.stringify(dexData));
+if(heliusData){
+const m=heliusData.content?.metadata;
+const ti=heliusData.token_info||{};
+aiData.push('Helius: name='+((m&&m.name)||'?')+' supply='+(ti.supply||'?')+' freeze='+(ti.freeze_authority?'YES':'none')+' mint='+(ti.mint_authority?'YES':'renounced')+' authorities='+((heliusData.authorities||[]).length));
+}
+const aiR=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:'Analyze this Solana token based on the data. Give: 1) Scam Score (1-10), 2) Dev funding analysis, 3) Bundle risk, 4) Top holder concentration risk, 5) Current meta fit, 6) Previous deploy likelihood, 7) Liquidity assessment, 8) Verdict (BUY/AVOID/DYOR). Be direct, degen style. Data: '+aiData.join(' | ')}]})});
+const aiJ=await aiR.json();
+if(aiJ.reply){
+html+='<br><span class="info">====== TRENCHEE AI ANALYSIS ======</span><br><br>';
+html+='<span class="white">'+aiJ.reply.replace(/</g,'&lt;').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<span class="val">$1</span>')+'</span>';
+}
+}catch(e){
+// Fallback: compute basic risk metrics locally
+html+='<br><span class="info">====== TRENCHEE RISK ASSESSMENT ======</span><br><br>';
+let riskScore=0;let flags=[];
+if(heliusData){
+if(heliusData.token_info?.freeze_authority){riskScore+=3;flags.push('⚠️ Freeze authority active — dev can freeze your tokens')}
+if(heliusData.token_info?.mint_authority){riskScore+=3;flags.push('⚠️ Mint authority active — dev can mint infinite supply')}
+}
+if(dexData){
+const liq=dexData.liquidity?.usd||0;
+const mc=dexData.marketCap||0;
+const age=dexData.pairCreatedAt?Math.floor((Date.now()-dexData.pairCreatedAt)/3600000):null;
+if(liq<5000){riskScore+=2;flags.push('⚠️ Low liquidity ($'+Number(liq).toLocaleString()+') — high slippage risk')}
+if(mc>0&&liq>0&&liq/mc<0.1){riskScore+=1;flags.push('⚠️ Liquidity/MCap ratio below 10% — thin support')}
+if(age!==null&&age<2){riskScore+=1;flags.push('⚠️ Token launched '+age+'h ago — extremely new')}
+const vol=dexData.volume?.h24||0;
+if(vol>0&&mc>0)html+='<span class="white">Volume/MCap:</span>  <span class="val">'+(vol/mc*100).toFixed(1)+'%</span><br>';
+if(age!==null)html+='<span class="white">Age:</span>          <span class="val">'+age+' hours</span><br>';
+html+='<span class="white">Meta Fit:</span>     <span class="dim">Check CT sentiment manually</span><br>';
+}
+riskScore=Math.min(riskScore,10);
+const riskColor=riskScore>=7?'danger':riskScore>=4?'warn':'val';
+const riskLabel=riskScore>=7?'HIGH RISK':riskScore>=4?'MODERATE':'LOW RISK';
+html+='<br><span class="white">Risk Score:</span>   <span class="'+riskColor+'">'+riskScore+'/10 ('+riskLabel+')</span><br>';
+if(flags.length)html+='<br>'+flags.map(f=>'<span class="warn">'+f+'</span>').join('<br>')+'<br>';
+else html+='<span class="val">✓ No major red flags detected from on-chain data</span><br>';
+html+='<br><span class="dim">For full AI analysis with dev tracking, bundle detection &amp; holder PnL → use chat widget or @trencheeagent_bot</span>';
+}
+html+='<br><br><span class="prompt">$</span> <span class="dim">_</span>';
 out.innerHTML=html;btn.disabled=false;btn.textContent='SCAN';
 }
 window.scanCA=scanCA;
