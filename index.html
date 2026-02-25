@@ -317,11 +317,7 @@ section{padding:60px 16px}
 <p>Devs use fresh wallets, private swaps, and timing exploits to accumulate supply invisibly. By the time you notice, they've already dumped. Same dev, new wallet, rinse and repeat.</p>
 </div>
 </div>
-<!-- Whiteboard mascot -->
-<div style="text-align:center;margin-top:48px" class="reveal">
-<img src="mascot2.jpg" alt="Trenchee Teaching" class="whiteboard-img">
-<p style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-top:12px">Trenchee breaking down the data so you don't have to.</p>
-</div>
+<!-- removed whiteboard -->
 </section>
 
 <!-- SOLUTION -->
@@ -630,6 +626,76 @@ out.innerHTML=html;btn.disabled=false;btn.textContent='SCAN';
 }
 window.scanCA=scanCA;
 document.getElementById('ca-input').addEventListener('keydown',e=>{if(e.key==='Enter')scanCA()});
+
+// ===== LIVE CHAT WIDGET =====
+(function(){
+const chatHTML=`
+<div id="chat-widget" style="position:fixed;bottom:24px;right:24px;z-index:9000;font-family:var(--mono)">
+<div id="chat-bubble" onclick="toggleChat()" style="width:60px;height:60px;border-radius:50%;background:var(--green);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(0,255,136,.4);transition:all .3s;animation:chat-pulse 2s ease-in-out infinite">
+<span style="font-size:24px;color:#000">💬</span>
+</div>
+<div id="chat-panel" style="display:none;position:absolute;bottom:72px;right:0;width:360px;max-height:500px;background:#0a0a0a;border:1px solid rgba(0,255,136,.2);border-radius:12px;overflow:hidden;box-shadow:0 0 60px rgba(0,255,136,.15)">
+<div style="background:#111;padding:14px 16px;border-bottom:1px solid rgba(0,255,136,.1);display:flex;justify-content:space-between;align-items:center">
+<span style="color:var(--green);font-size:13px;font-weight:600">🔥 Talk to Trenchee</span>
+<span onclick="toggleChat()" style="color:var(--text-dim);cursor:pointer;font-size:18px">✕</span>
+</div>
+<div id="chat-messages" style="padding:16px;height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:10px">
+<div style="background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.1);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text);max-width:85%;align-self:flex-start">
+yo, I'm Trenchee 🤖 paste me a CA or ask me anything about memecoins. I'll give it to you straight — no fluff.
+</div>
+</div>
+<div style="padding:10px;border-top:1px solid rgba(0,255,136,.1);display:flex;gap:8px">
+<input type="text" id="chat-input" placeholder="Ask Trenchee anything..." style="flex:1;padding:10px 12px;background:#111;border:1px solid rgba(0,255,136,.15);border-radius:8px;color:var(--green);font-family:var(--mono);font-size:12px;outline:none" onkeydown="if(event.key==='Enter')sendChat()">
+<button onclick="sendChat()" style="padding:10px 16px;background:var(--green);color:#000;border:none;border-radius:8px;font-family:var(--mono);font-weight:600;font-size:12px;cursor:pointer">→</button>
+</div>
+</div>
+</div>`;
+document.body.insertAdjacentHTML('beforeend',chatHTML);
+
+const style=document.createElement('style');
+style.textContent=`@keyframes chat-pulse{0%,100%{box-shadow:0 0 20px rgba(0,255,136,.3)}50%{box-shadow:0 0 40px rgba(0,255,136,.5)}}#chat-panel{animation:chat-slide .3s ease}@keyframes chat-slide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}@media(max-width:480px){#chat-panel{width:calc(100vw - 32px)!important;right:-8px!important}}`;
+document.head.appendChild(style);
+})();
+
+let chatOpen=false;
+function toggleChat(){
+chatOpen=!chatOpen;
+document.getElementById('chat-panel').style.display=chatOpen?'block':'none';
+if(chatOpen)document.getElementById('chat-input').focus();
+}
+
+const chatHistory=[];
+async function sendChat(){
+const input=document.getElementById('chat-input');
+const msg=input.value.trim();if(!msg)return;
+input.value='';
+const msgs=document.getElementById('chat-messages');
+// User bubble
+msgs.insertAdjacentHTML('beforeend',`<div style="background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.15);border-radius:8px;padding:10px 12px;font-size:12px;color:#fff;max-width:85%;align-self:flex-end">${msg.replace(/</g,'&lt;')}</div>`);
+msgs.scrollTop=msgs.scrollHeight;
+// Typing indicator
+msgs.insertAdjacentHTML('beforeend',`<div id="typing-indicator" style="font-size:12px;color:var(--green);padding:4px 0">analyzing...</div>`);
+msgs.scrollTop=msgs.scrollHeight;
+
+chatHistory.push({role:'user',content:msg});
+
+try{
+const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:chatHistory})});
+const j=await r.json();
+const reply=j.reply||'brain glitched, try again';
+chatHistory.push({role:'assistant',content:reply});
+document.getElementById('typing-indicator')?.remove();
+msgs.insertAdjacentHTML('beforeend',`<div style="background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.1);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text);max-width:85%;align-self:flex-start">${reply.replace(/</g,'&lt;').replace(/\n/g,'<br>')}</div>`);
+}catch(e){
+document.getElementById('typing-indicator')?.remove();
+// Fallback: give a Trenchee-like response locally
+const fallbacks=["yo, for full analysis with real on-chain data hit me up on Telegram: @trencheeagent_bot 🔥","paste that CA in the scanner above ☝️ or msg me on TG @trencheeagent_bot for the real breakdown","I'm better on Telegram rn — @trencheeagent_bot. paste any CA and I'll tear it apart for you","the web chat is warming up. for instant analysis: @trencheeagent_bot on Telegram 🤖"];
+const reply=fallbacks[Math.floor(Math.random()*fallbacks.length)];
+chatHistory.push({role:'assistant',content:reply});
+msgs.insertAdjacentHTML('beforeend',`<div style="background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.1);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text);max-width:85%;align-self:flex-start">${reply}</div>`);
+}
+msgs.scrollTop=msgs.scrollHeight;
+}
 </script>
 </body>
 </html>
