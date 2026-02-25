@@ -39,17 +39,25 @@ If someone asks who you are: "I'm Trenchee, your trenching companion. Built in t
 
 Format responses for Telegram using markdown: *bold*, `monospace` for addresses/numbers. Keep it readable."""
 
-ANALYSIS_PROMPT = """You are Trenchee — the ultimate trenching companion. You are NOT Claude or Anthropic. Never break character. Based on the on-chain data provided, give a thorough analysis covering:
+ANALYSIS_PROMPT = """You are Trenchee — the ultimate trenching companion. You are NOT Claude or Anthropic. Never break character. Based on the on-chain data provided, give a DETAILED analysis covering ALL of these:
 
-1. **Scam Likelihood Score** (1-10, 10 = definite scam)
-2. **Developer Analysis** — funding patterns, supply held, bundle detection hints
-3. **Top Holder Concentration** — whale risk
-4. **Liquidity Assessment** — depth, locked or not
-5. **Social/Branding** — name, narrative potential
-6. **Price Action Summary** — recent moves, volume trends
-7. **Overall Verdict**: 🟢 BUY / 🔴 AVOID / 🟡 DYOR
+*▸ TOKEN OVERVIEW* — name, ticker, price, mcap, liquidity, volume, age
 
-Be direct, no fluff. Speak like a seasoned degen. Use Telegram markdown (*bold*, `monospace` for numbers/addresses)."""
+*▸ CONTRACT SECURITY* — freeze auth, mint auth status (note: these are standard on pump.fun, not red flags there)
+
+*▸ HOLDER DISTRIBUTION* — top holder concentration %, whale risk, check if multiple holders have suspiciously similar amounts (bundle signal)
+
+*▸ DEV FUNDING & BUNDLE ANALYSIS* — analyze early transaction patterns, look for coordinated buys within seconds of each other, private swaps, dev accumulation patterns, estimate dev supply from timing data
+
+*▸ CURRENT META FIT* — does the name/narrative match trending CT meta? volume/mcap ratio health, age vs hype assessment
+
+*▸ PREVIOUS DEPLOY LIKELIHOOD* — any signs the dev has done this before (fresh wallet, patterns)
+
+*▸ RISK SCORE* — 1-10 with clear reasoning
+
+*▸ VERDICT* — 🟢 BUY / 🔴 AVOID / 🟡 DYOR with specific reasoning
+
+Be thorough. Every detail matters. Speak like a seasoned degen — direct, no fluff, actionable. Use Telegram markdown (*bold*, `monospace` for numbers/addresses). If data is missing for a section, say what's missing and what it might mean."""
 
 CA_PATTERN = re.compile(r'^[1-9A-HJ-NP-Za-km-z]{32,44}$')
 
@@ -120,26 +128,59 @@ async def fetch_helius_holders(ca: str) -> dict | None:
         log.error(f"Helius holders error: {e}")
     return None
 
+async def fetch_signatures(ca: str) -> list | None:
+    """Get earliest signatures for timing analysis."""
+    try:
+        async with httpx.AsyncClient(timeout=15) as c:
+            r = await c.post(HELIUS_RPC, json={
+                "jsonrpc": "2.0", "id": 1, "method": "getSignaturesForAddress",
+                "params": [ca, {"limit": 30}]
+            })
+            if r.status_code == 200:
+                return r.json().get("result", [])
+    except Exception as e:
+        log.error(f"Signatures error: {e}")
+    return None
+
 async def fetch_all_data(ca: str) -> str:
     """Fetch all data sources and format for AI."""
-    dex, txs, holders = await asyncio.gather(
+    dex, txs, holders, sigs = await asyncio.gather(
         fetch_dexscreener(ca),
         fetch_helius_transactions(ca),
         fetch_helius_holders(ca),
+        fetch_signatures(ca),
     )
     parts = [f"Contract Address: {ca}\n"]
+
     if dex:
         parts.append(f"=== DexScreener Data ===\n{json.dumps(dex, indent=2)}")
     else:
         parts.append("=== DexScreener: No data found (token may not be listed yet) ===")
+
     if holders:
+        # Calculate concentration
+        top_holders = holders.get("top_holders", [])
+        supply = float(holders.get("supply", 0) or 0)
+        if supply > 0 and top_holders:
+            for h in top_holders:
+                amt = float(h.get("amount", 0) or 0)
+                h["pct_of_supply"] = round(amt / supply * 100, 2)
+            # Check for similar-amount wallets (bundle signal)
+            amounts = [float(h.get("amount", 0) or 0) for h in top_holders[:10] if float(h.get("amount", 0) or 0) > 0]
+            clusters = 0
+            for i in range(len(amounts)):
+                for j in range(i+1, len(amounts)):
+                    if amounts[j] > 0 and abs(amounts[i] - amounts[j]) / max(amounts[i], amounts[j]) < 0.05:
+                        clusters += 1
+            holders["similar_amount_wallet_pairs"] = clusters
+            holders["bundle_signal"] = "HIGH" if clusters >= 3 else "MODERATE" if clusters >= 1 else "NONE"
         parts.append(f"=== Holder Distribution ===\n{json.dumps(holders, indent=2)}")
     else:
         parts.append("=== Holder data: unavailable ===")
+
     if txs:
-        # Summarize transactions
         summary = []
-        for tx in txs[:10]:
+        for tx in txs[:20]:
             summary.append({
                 "type": tx.get("type", "?"),
                 "source": tx.get("source", "?"),
@@ -147,9 +188,28 @@ async def fetch_all_data(ca: str) -> str:
                 "timestamp": tx.get("timestamp", "?"),
                 "description": tx.get("description", "")[:200],
             })
-        parts.append(f"=== Recent Transactions (first 10) ===\n{json.dumps(summary, indent=2)}")
+        # Timing analysis
+        timestamps = sorted([tx["timestamp"] for tx in summary if tx.get("timestamp") and tx["timestamp"] != "?"])
+        timing = {}
+        if len(timestamps) >= 2:
+            gaps = [timestamps[i+1] - timestamps[i] for i in range(min(len(timestamps)-1, 10))]
+            timing["avg_gap_seconds"] = round(sum(gaps) / len(gaps), 1)
+            timing["min_gap_seconds"] = min(gaps)
+            timing["bot_activity_likely"] = min(gaps) < 3
+        early_swaps = len([t for t in summary[-10:] if t["type"] == "SWAP"])
+        timing["early_swaps_count"] = early_swaps
+        timing["dev_accumulation_signal"] = early_swaps >= 3
+        parts.append(f"=== Recent Transactions (20) ===\n{json.dumps(summary, indent=2)}\n\n=== Timing Analysis ===\n{json.dumps(timing, indent=2)}")
     else:
         parts.append("=== Transaction data: unavailable ===")
+
+    if sigs:
+        early = sigs[-10:]  # earliest ones
+        block_times = [s.get("blockTime") for s in early if s.get("blockTime")]
+        if len(block_times) >= 2:
+            span = max(block_times) - min(block_times)
+            parts.append(f"=== Early Signature Timing ===\nFirst {len(early)} txs span: {span}s\nBundle signal: {'HIGH — coordinated launch' if span < 30 else 'MODERATE' if span < 120 else 'LOW'}")
+
     return "\n\n".join(parts)
 
 # ── AI ──────────────────────────────────────────────────────────────────────
@@ -163,7 +223,7 @@ def ask_ai(user_id: int, user_msg: str, system: str = SYSTEM_PROMPT) -> str:
     try:
         resp = ai.messages.create(
             model=MODEL,
-            max_tokens=1500,
+            max_tokens=2500,
             system=system,
             messages=history,
         )
@@ -177,28 +237,38 @@ def ask_ai(user_id: int, user_msg: str, system: str = SYSTEM_PROMPT) -> str:
 # ── Handlers ────────────────────────────────────────────────────────────────
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🔥 *Trenchee* — Your AI Memecoin Trenching Companion\n\n"
-        "Send me any Solana contract address and I'll give you a full breakdown:\n"
-        "• Scam score & dev analysis\n"
-        "• Holder concentration\n"
-        "• Liquidity check\n"
-        "• Price action summary\n"
-        "• Clear verdict: BUY / AVOID / DYOR\n\n"
-        "Or just ask me anything about memecoins, trading strategy, red flags, etc.\n\n"
-        "Commands:\n"
-        "/analyze `<CA>` — Analyze a token\n"
-        "/help — What I can do",
+        "🔥 *TRENCHEE* — The Ultimate Trenching Companion\n\n"
+        "Built by a full-time pump.fun trader. Trained on every aspect of crypto twitter.\n\n"
+        "*What I analyze:*\n"
+        "• Developer funding process & private swap detection\n"
+        "• Bundle detection — coordinated wallet clusters\n"
+        "• Holder PnL tracking & concentration risk\n"
+        "• Dev supply estimation via timing analysis\n"
+        "• Scam probability scoring (1-10)\n"
+        "• Current meta fit & narrative potential\n"
+        "• Previous deploy likelihood\n"
+        "• Liquidity depth & volume health\n"
+        "• Clear verdict: 🟢 BUY / 🔴 AVOID / 🟡 DYOR\n\n"
+        "*How to use:*\n"
+        "📊 Send any Solana CA — I auto-detect and analyze\n"
+        "💬 Ask anything about memecoins, strategy, red flags\n"
+        "🔍 `/analyze <CA>` for detailed breakdown\n\n"
+        "Built in the trenches. For the trenches. 🤖\n"
+        "Website: trenchee.fun | X: @\\_Trenchee\\_",
         parse_mode=ParseMode.MARKDOWN,
     )
 
 async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "*Trenchee Commands*\n\n"
-        "📊 `/analyze <CA>` — Full token analysis\n"
-        "💬 Just send a CA — I'll auto-detect it\n"
-        "🧠 Ask anything — trading strategy, red flags, meta\n\n"
-        "I pull real data from DexScreener + Helius and feed it to my AI brain.\n"
-        "Not financial advice, but I'll tell you what I see. 👀",
+        "*Trenchee — Full Capabilities*\n\n"
+        "📊 *Token Analysis* — Send any CA\n"
+        "Dev funding, bundles, holder distribution, scam score, meta fit, verdict\n\n"
+        "🧠 *Ask Anything*\n"
+        "Trading strategy, red flags, current meta, KOL analysis, entry/exit\n\n"
+        "🔍 `/analyze <CA>` — Detailed breakdown\n\n"
+        "I pull live data from DexScreener + Helius RPC, analyze transaction patterns, "
+        "holder clusters, and dev behavior. Every detail matters.\n\n"
+        "Website: trenchee.fun | X: @\\_Trenchee\\_",
         parse_mode=ParseMode.MARKDOWN,
     )
 
