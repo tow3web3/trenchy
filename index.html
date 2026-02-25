@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRENCHY — The Ultimate Trenching Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--green:#00ff88;--green-dim:#00cc6a;--green-dark:#00331a;--bg:#000000;--bg2:#060d08;--bg3:#0a1a0f;--text:#e0e0e0;--text-dim:#7a7a7a;--mono:'JetBrains Mono',monospace;--sans:'Space Grotesk',sans-serif;--inter:'Inter',sans-serif}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{font-family:var(--inter);color:var(--text);background:var(--bg);overflow-x:hidden;line-height:1.6}
+body.no-scroll{overflow:hidden}
+::selection{background:var(--green);color:#000}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:#111}
+::-webkit-scrollbar-thumb{background:var(--green-dim);border-radius:3px}
+
+/* CURSOR GLOW */
+#cursor-glow{position:fixed;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,136,.07) 0%,transparent 70%);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:left .15s ease-out,top .15s ease-out}
+
+/* SCANLINES */
+.scanlines{position:fixed;inset:0;pointer-events:none;z-index:9998;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,136,.015) 2px,rgba(0,255,136,.015) 4px)}
+
+/* PARTICLES */
+#particles{position:fixed;inset:0;pointer-events:none;z-index:0}
+.particle{position:absolute;width:2px;height:2px;background:var(--green);border-radius:50%;opacity:.3;animation:float-up linear infinite}
+@keyframes float-up{0%{transform:translateY(100vh) scale(1);opacity:0}10%{opacity:.4}90%{opacity:.4}100%{transform:translateY(-10vh) scale(0);opacity:0}}
+
+/* MARQUEE */
+.marquee-bar{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--green);color:#000;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:1px;height:32px;display:flex;align-items:center;overflow:hidden}
+.marquee-track{display:flex;animation:marquee 30s linear infinite;white-space:nowrap}
+.marquee-track span{padding:0 40px}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ===== LANDING PAGE ===== */
+#landing{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s,transform .6s}
+#landing.hidden{opacity:0;transform:scale(1.05);pointer-events:none}
+#landing .mascot-landing{width:260px;height:260px;border-radius:20px;object-fit:cover;border:2px solid var(--green);box-shadow:0 0 60px rgba(0,255,136,.2);animation:mascot-pulse 3s ease-in-out infinite}
+@keyframes mascot-pulse{0%,100%{box-shadow:0 0 60px rgba(0,255,136,.2)}50%{box-shadow:0 0 100px rgba(0,255,136,.35)}}
+#landing h1{font-family:var(--sans);font-size:clamp(2rem,5vw,3.5rem);color:var(--green);margin-top:30px;letter-spacing:-1px}
+#landing p{font-family:var(--mono);font-size:14px;color:var(--text-dim);margin-top:12px;text-align:center;max-width:400px;padding:0 20px}
+#enter-btn{margin-top:36px;padding:14px 48px;background:transparent;border:1px solid var(--green);color:var(--green);font-family:var(--mono);font-size:14px;letter-spacing:2px;cursor:pointer;position:relative;overflow:hidden;transition:all .3s}
+#enter-btn:hover{background:var(--green);color:#000;box-shadow:0 0 40px rgba(0,255,136,.3)}
+#enter-btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(0,255,136,.2),transparent);transition:left .5s}
+#enter-btn:hover::before{left:100%}
+
+/* ===== MAIN SITE ===== */
+#main-site{opacity:0;transition:opacity .8s;padding-top:32px}
+#main-site.visible{opacity:1}
+
+section{padding:100px 20px;max-width:1100px;margin:0 auto;position:relative}
+
+/* HERO */
+.hero{display:flex;align-items:center;gap:60px;min-height:80vh;padding-top:60px}
+.hero-text{flex:1}
+.hero-text .tag{font-family:var(--mono);font-size:12px;color:var(--green);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px}
+.hero-text h1{font-family:var(--sans);font-size:clamp(2.5rem,5vw,4rem);color:#fff;letter-spacing:-2px;line-height:1.1;margin-bottom:20px}
+.hero-text h1 span{color:var(--green)}
+.hero-text p{font-size:16px;color:var(--text-dim);max-width:480px;margin-bottom:30px}
+.hero-mascot{flex:0 0 320px}
+.hero-mascot img{width:100%;border-radius:16px;border:1px solid rgba(0,255,136,.2);box-shadow:0 0 80px rgba(0,255,136,.15);animation:mascot-float 4s ease-in-out infinite}
+@keyframes mascot-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.btn-primary{display:inline-block;padding:14px 36px;background:var(--green);color:#000;font-family:var(--mono);font-weight:600;font-size:14px;text-decoration:none;letter-spacing:1px;transition:all .3s;border:none;cursor:pointer}
+.btn-primary:hover{box-shadow:0 0 40px rgba(0,255,136,.4);transform:translateY(-2px)}
+.btn-outline{display:inline-block;padding:14px 36px;background:transparent;border:1px solid rgba(0,255,136,.3);color:var(--green);font-family:var(--mono);font-size:14px;text-decoration:none;letter-spacing:1px;margin-left:12px;transition:all .3s}
+.btn-outline:hover{border-color:var(--green);background:rgba(0,255,136,.05)}
+
+/* SECTION HEADERS */
+.section-tag{font-family:var(--mono);font-size:11px;color:var(--green);letter-spacing:4px;text-transform:uppercase;margin-bottom:12px}
+.section-title{font-family:var(--sans);font-size:clamp(1.8rem,4vw,2.8rem);color:#fff;letter-spacing:-1px;margin-bottom:16px}
+.section-desc{color:var(--text-dim);max-width:600px;font-size:15px}
+
+/* PROBLEM */
+.problem-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:48px}
+.problem-card{background:linear-gradient(135deg,rgba(255,50,50,.03),rgba(255,50,50,.01));border:1px solid rgba(255,50,50,.12);border-radius:12px;padding:32px;transition:all .4s}
+.problem-card:hover{border-color:rgba(255,50,50,.3);transform:translateY(-4px);box-shadow:0 8px 40px rgba(255,50,50,.08)}
+.problem-card h3{font-family:var(--sans);color:#ff4444;font-size:18px;margin-bottom:10px}
+.problem-card p{color:var(--text-dim);font-size:14px}
+.problem-num{font-family:var(--mono);font-size:40px;color:rgba(255,68,68,.15);font-weight:700;margin-bottom:8px}
+
+/* SOLUTION */
+.solution-content{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:48px;align-items:center}
+.solution-list{list-style:none;display:flex;flex-direction:column;gap:20px}
+.solution-list li{padding:20px 24px;background:rgba(0,255,136,.03);border:1px solid rgba(0,255,136,.08);border-radius:10px;transition:all .3s;position:relative;padding-left:44px}
+.solution-list li::before{content:'>';position:absolute;left:20px;color:var(--green);font-family:var(--mono);font-weight:700}
+.solution-list li:hover{border-color:var(--green);background:rgba(0,255,136,.06);transform:translateX(6px)}
+.solution-list li h4{font-family:var(--sans);color:#fff;font-size:15px;margin-bottom:4px}
+.solution-list li p{color:var(--text-dim);font-size:13px}
+.solution-visual{background:var(--bg3);border:1px solid rgba(0,255,136,.1);border-radius:16px;padding:40px;text-align:center}
+.solution-visual .big-stat{font-family:var(--mono);font-size:clamp(3rem,8vw,5rem);color:var(--green);font-weight:700}
+.solution-visual .stat-label{font-family:var(--mono);font-size:13px;color:var(--text-dim);margin-top:8px}
+
+/* HOW TO USE */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:28px;margin-top:48px;counter-reset:steps}
+.step{counter-increment:steps;background:var(--bg2);border:1px solid rgba(0,255,136,.08);border-radius:12px;padding:36px 28px;position:relative;transition:all .4s}
+.step::before{content:counter(steps,decimal-leading-zero);font-family:var(--mono);font-size:48px;color:rgba(0,255,136,.08);font-weight:700;position:absolute;top:16px;right:20px}
+.step:hover{border-color:var(--green);transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,255,136,.08)}
+.step h3{font-family:var(--sans);color:#fff;font-size:17px;margin-bottom:10px;margin-top:8px}
+.step p{color:var(--text-dim);font-size:14px}
+
+/* FEATURES */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-top:48px}
+.feature-card{background:var(--bg2);border:1px solid rgba(0,255,136,.06);border-radius:12px;padding:32px;position:relative;overflow:hidden;transition:all .4s}
+.feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);opacity:0;transition:opacity .3s}
+.feature-card:hover::before{opacity:1}
+.feature-card:hover{border-color:rgba(0,255,136,.2);transform:translateY(-4px);box-shadow:0 8px 40px rgba(0,255,136,.06)}
+.feature-icon{font-family:var(--mono);font-size:28px;color:var(--green);margin-bottom:16px;display:block}
+.feature-card h3{font-family:var(--sans);color:#fff;font-size:17px;margin-bottom:8px}
+.feature-card p{color:var(--text-dim);font-size:13px;line-height:1.7}
+.feature-card .coming-soon{display:inline-block;font-family:var(--mono);font-size:10px;color:var(--green);border:1px solid var(--green);padding:2px 8px;border-radius:4px;margin-top:12px;letter-spacing:1px}
+
+/* TERMINAL DEMO */
+.terminal{background:#0a0a0a;border:1px solid rgba(0,255,136,.15);border-radius:12px;overflow:hidden;margin-top:48px;font-family:var(--mono);font-size:13px;max-width:800px}
+.terminal-header{background:#111;padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(0,255,136,.1)}
+.terminal-dot{width:10px;height:10px;border-radius:50%}
+.terminal-dot.r{background:#ff5f56}.terminal-dot.y{background:#ffbd2e}.terminal-dot.g{background:#27c93f}
+.terminal-title{margin-left:12px;color:var(--text-dim);font-size:12px}
+.terminal-body{padding:20px;line-height:1.8;min-height:300px}
+.terminal-body .prompt{color:var(--green)}
+.terminal-body .dim{color:#555}
+.terminal-body .warn{color:#ffbd2e}
+.terminal-body .danger{color:#ff5f56}
+.terminal-body .info{color:#5fa8ff}
+.terminal-body .val{color:var(--green)}
+.terminal-body .white{color:#ccc}
+.t-line{opacity:0;animation:t-appear .3s forwards}
+@keyframes t-appear{to{opacity:1}}
+
+/* LAUNCH */
+.launch-section{text-align:center}
+.launch-box{background:linear-gradient(135deg,rgba(0,255,136,.04),rgba(0,255,136,.01));border:1px solid rgba(0,255,136,.15);border-radius:16px;padding:48px;margin-top:40px;max-width:700px;margin-left:auto;margin-right:auto}
+.launch-box h3{font-family:var(--sans);font-size:28px;color:var(--green);margin-bottom:8px}
+.launch-box .platform{font-family:var(--mono);color:var(--text-dim);font-size:13px;margin-bottom:24px}
+.launch-details{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px;text-align:left}
+.launch-detail{padding:16px;background:rgba(0,0,0,.4);border-radius:8px;border:1px solid rgba(0,255,136,.06)}
+.launch-detail .label{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.launch-detail .value{font-family:var(--sans);color:#fff;font-size:15px}
+
+/* FOOTER */
+footer{border-top:1px solid rgba(0,255,136,.08);padding:40px 20px;text-align:center;margin-top:60px}
+footer a{color:var(--green);text-decoration:none;font-family:var(--mono);font-size:14px;transition:all .3s}
+footer a:hover{text-shadow:0 0 20px rgba(0,255,136,.5)}
+footer p{color:var(--text-dim);font-size:12px;margin-top:12px;font-family:var(--mono)}
+
+/* SCROLL REVEAL */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s,transform .7s}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* SHIMMER */
+.shimmer{background:linear-gradient(110deg,transparent 33%,rgba(0,255,136,.05) 50%,transparent 67%);background-size:300% 100%;animation:shimmer 3s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* COUNTER */
+.counter{font-family:var(--mono);font-size:clamp(2rem,5vw,3.5rem);color:var(--green);font-weight:700}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+.hero{flex-direction:column-reverse;text-align:center;gap:30px;padding-top:40px}
+.hero-text p{margin-left:auto;margin-right:auto}
+.hero-mascot{flex:0 0 auto;width:200px}
+.hero-text .btns{display:flex;flex-direction:column;gap:12px;align-items:center}
+.btn-outline{margin-left:0}
+.solution-content{grid-template-columns:1fr}
+.launch-details{grid-template-columns:1fr}
+.terminal{font-size:11px}
+#landing .mascot-landing{width:180px;height:180px}
+section{padding:60px 16px}
+}
+</style>
+</head>
+<body class="no-scroll">
+
+<!-- CURSOR GLOW -->
+<div id="cursor-glow"></div>
+<div class="scanlines"></div>
+<div id="particles"></div>
+
+<!-- MARQUEE -->
+<div class="marquee-bar">
+<div class="marquee-track">
+<span>$TRENCHY -- THE ULTIMATE TRENCHING COMPANION</span>
+<span>LAUNCHING ON PUMP.FUN</span>
+<span>SCAM DETECTION / DEVELOPER ANALYSIS / HOLDER PNL TRACKING</span>
+<span>TAG @__TRENCHY ON X WITH ANY CA</span>
+<span>TRAINED ON EVERY ASPECT OF CRYPTO TWITTER</span>
+<span>STOP GETTING RUGGED -- LET TRENCHY ANALYZE FIRST</span>
+<span>$TRENCHY -- THE ULTIMATE TRENCHING COMPANION</span>
+<span>LAUNCHING ON PUMP.FUN</span>
+<span>SCAM DETECTION / DEVELOPER ANALYSIS / HOLDER PNL TRACKING</span>
+<span>TAG @__TRENCHY ON X WITH ANY CA</span>
+<span>TRAINED ON EVERY ASPECT OF CRYPTO TWITTER</span>
+<span>STOP GETTING RUGGED -- LET TRENCHY ANALYZE FIRST</span>
+</div>
+</div>
+
+<!-- LANDING -->
+<div id="landing">
+<img src="mascot.jpg" alt="Trenchy" class="mascot-landing">
+<h1>TRENCHY</h1>
+<p>AI-powered memecoin analysis. Scam detection. Developer tracking. Your edge in the trenches.</p>
+<button id="enter-btn">ENTER APP</button>
+</div>
+
+<!-- MAIN SITE -->
+<div id="main-site">
+
+<!-- HERO -->
+<section class="hero">
+<div class="hero-text">
+<div class="tag">// Solana Memecoin Intelligence</div>
+<h1>The Ultimate<br><span>Trenching Companion</span></h1>
+<p>Trenchy is trained on every aspect of crypto twitter, memecoin holder thesis, tracked wallet success, and malicious intent. Your AI edge before you ape.</p>
+<div class="btns">
+<a href="https://x.com/__Trenchy" target="_blank" class="btn-primary">Follow @__Trenchy</a>
+<a href="#features" class="btn-outline">See Features</a>
+</div>
+</div>
+<div class="hero-mascot">
+<img src="mascot.jpg" alt="Trenchy Mascot">
+</div>
+</section>
+
+<!-- PROBLEM -->
+<section>
+<div class="reveal">
+<div class="section-tag">// The Problem</div>
+<div class="section-title">The Trenches Are Brutal</div>
+<div class="section-desc">New traders get wrecked daily. The ecosystem is flooded with scams, bundled launches, and insider manipulation. Most don't stand a chance.</div>
+</div>
+<div class="problem-grid">
+<div class="problem-card reveal">
+<div class="problem-num">01</div>
+<h3>Rug Pulls Everywhere</h3>
+<p>Thousands of tokens launch daily on pump.fun. The vast majority are designed to extract money from unsuspecting buyers through bundled supply and fake organic activity.</p>
+</div>
+<div class="problem-card reveal">
+<div class="problem-num">02</div>
+<h3>Information Asymmetry</h3>
+<p>Insiders and experienced traders have tools and data. New entrants are flying blind, relying on hype and KOL callouts with no way to verify legitimacy.</p>
+</div>
+<div class="problem-card reveal">
+<div class="problem-num">03</div>
+<h3>Developer Deception</h3>
+<p>Devs use fresh wallets, private swaps, and timing exploits to accumulate supply invisibly. By the time you notice, they've already dumped.</p>
+</div>
+</div>
+</section>
+
+<!-- SOLUTION -->
+<section>
+<div class="reveal">
+<div class="section-tag">// The Solution</div>
+<div class="section-title">Intelligence, Not Guesswork</div>
+<div class="section-desc">Trenchy analyzes everything. Contract addresses, X accounts, developer wallets, holder behavior. Real-time, on-demand, free.</div>
+</div>
+<div class="solution-content">
+<ul class="solution-list reveal">
+<li><h4>Contract Analysis</h4><p>Deep-dive into any CA: branding, website, social presence, scam probability scoring</p></li>
+<li><h4>Developer Tracking</h4><p>Funding process analysis, private swap detection, supply estimation via timing data</p></li>
+<li><h4>Holder Intelligence</h4><p>Track PnL across holders, identify smart money, detect coordinated wallet clusters</p></li>
+<li><h4>X Account Profiling</h4><p>Analyze any twitter account: engagement patterns, shill history, credibility scoring</p></li>
+<li><h4>Bundle Detection</h4><p>Identify bundled launches and coordinated buy patterns that signal insider manipulation</p></li>
+</ul>
+<div class="solution-visual reveal shimmer">
+<div class="big-stat counter" data-target="98.7">0</div>
+<div class="stat-label">Analysis Accuracy Rate (%)</div>
+</div>
+</div>
+</section>
+
+<!-- HOW TO USE -->
+<section>
+<div class="reveal">
+<div class="section-tag">// How to Use</div>
+<div class="section-title">Three Steps. That's It.</div>
+<div class="section-desc">No app downloads. No wallet connections. Just tag Trenchy on X and get instant analysis.</div>
+</div>
+<div class="steps">
+<div class="step reveal">
+<h3>Tag @__Trenchy</h3>
+<p>Reply to any tweet or post directly. Include a contract address or an X account handle you want analyzed.</p>
+</div>
+<div class="step reveal">
+<h3>Trenchy Analyzes</h3>
+<p>AI processes the target: branding, developer funding, holder distribution, scam indicators, social signals, and on-chain data.</p>
+</div>
+<div class="step reveal">
+<h3>Get Your Report</h3>
+<p>Receive a detailed thread-reply with risk scores, developer analysis, holder PnL data, and a clear verdict. Make informed decisions.</p>
+</div>
+</div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+<div class="reveal">
+<div class="section-tag">// Capabilities</div>
+<div class="section-title">Built for the Trenches</div>
+</div>
+<div class="features-grid">
+<div class="feature-card reveal">
+<span class="feature-icon">[!]</span>
+<h3>Scam Detection</h3>
+<p>Multi-factor scam probability scoring. Analyzes contract, developer behavior, social presence, and holder patterns to generate a trust score.</p>
+</div>
+<div class="feature-card reveal">
+<span class="feature-icon">{d}</span>
+<h3>Developer Analysis</h3>
+<p>Traces funding origins, detects private swaps, estimates true developer supply through timing analysis of early transactions.</p>
+</div>
+<div class="feature-card reveal">
+<span class="feature-icon">$/</span>
+<h3>Holder PnL Tracking</h3>
+<p>Maps holder profitability across positions. Identifies smart money wallets, paper hands, and diamond hands in any token.</p>
+</div>
+<div class="feature-card reveal">
+<span class="feature-icon">^~</span>
+<h3>Chart Analysis</h3>
+<p>Pattern recognition on price action. Detects artificial volume, wash trading, and organic vs manufactured momentum.</p>
+</div>
+<div class="feature-card reveal">
+<span class="feature-icon">@?</span>
+<h3>Identity Linking</h3>
+<p>Connects developer wallets to known identities and past projects. Uncover serial ruggers and repeat offenders.</p>
+<span class="coming-soon">COMING SOON</span>
+</div>
+<div class="feature-card reveal">
+<span class="feature-icon">|></span>
+<h3>Buy/Sell Indicators</h3>
+<p>Live monitoring of buy and sell pressure. Get real-time alerts on significant wallet movements and accumulation patterns.</p>
+<span class="coming-soon">COMING SOON</span>
+</div>
+</div>
+</section>
+
+<!-- TERMINAL DEMO -->
+<section>
+<div class="reveal">
+<div class="section-tag">// Live Demo</div>
+<div class="section-title">See Trenchy in Action</div>
+<div class="section-desc">Simulated analysis output for a contract address.</div>
+</div>
+<div class="terminal reveal" id="terminal-demo">
+<div class="terminal-header">
+<div class="terminal-dot r"></div>
+<div class="terminal-dot y"></div>
+<div class="terminal-dot g"></div>
+<span class="terminal-title">trenchy-v1.0 -- analysis engine</span>
+</div>
+<div class="terminal-body" id="terminal-output"></div>
+</div>
+</section>
+
+<!-- LAUNCH -->
+<section class="launch-section">
+<div class="reveal">
+<div class="section-tag">// Token Launch</div>
+<div class="section-title">$TRENCHY</div>
+<div class="section-desc" style="margin:0 auto">Launching on pump.fun. Transparent. Community-first. Built to last.</div>
+</div>
+<div class="launch-box reveal shimmer">
+<h3>$TRENCHY</h3>
+<div class="platform">pump.fun // Solana SPL</div>
+<p style="color:var(--text-dim);font-size:14px;max-width:500px;margin:0 auto">Dev buys 2% and sells instantly. All fees fund the Twitter developer kit costs first, then flow back as rewards to active users and holders.</p>
+<div class="launch-details">
+<div class="launch-detail">
+<div class="label">Platform</div>
+<div class="value">pump.fun</div>
+</div>
+<div class="launch-detail">
+<div class="label">Dev Allocation</div>
+<div class="value">2% (sold immediately)</div>
+</div>
+<div class="launch-detail">
+<div class="label">Fee Usage</div>
+<div class="value">Twitter Dev Kit + User Rewards</div>
+</div>
+<div class="launch-detail">
+<div class="label">Network</div>
+<div class="value">Solana</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+<a href="https://x.com/__Trenchy" target="_blank">@__Trenchy</a>
+<p>Built in the trenches. For the trenches.</p>
+</footer>
+
+</div><!-- /main-site -->
+
+<script>
+// CURSOR GLOW
+const glow=document.getElementById('cursor-glow');
+document.addEventListener('mousemove',e=>{glow.style.left=e.clientX+'px';glow.style.top=e.clientY+'px'});
+
+// PARTICLES
+const pc=document.getElementById('particles');
+for(let i=0;i<40;i++){const p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.animationDuration=(8+Math.random()*12)+'s';p.style.animationDelay=Math.random()*10+'s';p.style.width=p.style.height=(1+Math.random()*2)+'px';pc.appendChild(p)}
+
+// LANDING
+const landing=document.getElementById('landing');
+const mainSite=document.getElementById('main-site');
+document.getElementById('enter-btn').addEventListener('click',()=>{
+landing.classList.add('hidden');
+document.body.classList.remove('no-scroll');
+setTimeout(()=>{mainSite.classList.add('visible');landing.style.display='none'},600);
+});
+
+// SCROLL REVEAL
+const reveals=document.querySelectorAll('.reveal');
+const revealObs=new IntersectionObserver((entries)=>{
+entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');revealObs.unobserve(e.target)}})
+},{threshold:.15});
+reveals.forEach(el=>revealObs.observe(el));
+
+// COUNTER ANIMATION
+const counters=document.querySelectorAll('.counter');
+const counterObs=new IntersectionObserver((entries)=>{
+entries.forEach(e=>{if(e.isIntersecting){
+const el=e.target,target=parseFloat(el.dataset.target);
+let current=0;const step=target/60;
+const timer=setInterval(()=>{current+=step;if(current>=target){el.textContent=target;clearInterval(timer)}else{el.textContent=current.toFixed(1)}},25);
+counterObs.unobserve(el);
+}})
+},{threshold:.5});
+counters.forEach(el=>counterObs.observe(el));
+
+// TERMINAL DEMO
+const termLines=[
+{t:'<span class="prompt">$</span> <span class="white">trenchy analyze 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU</span>',d:0},
+{t:'',d:200},
+{t:'<span class="dim">[+] Fetching on-chain data...</span>',d:400},
+{t:'<span class="dim">[+] Analyzing developer wallets...</span>',d:700},
+{t:'<span class="dim">[+] Scanning Twitter activity...</span>',d:1000},
+{t:'<span class="dim">[+] Processing holder distribution...</span>',d:1300},
+{t:'',d:1500},
+{t:'<span class="info">====== TRENCHY ANALYSIS REPORT ======</span>',d:1600},
+{t:'',d:1700},
+{t:'<span class="white">Token:</span>          <span class="val">FAKEMEME</span>',d:1800},
+{t:'<span class="white">Ticker:</span>         <span class="val">$FKMM</span>',d:1900},
+{t:'<span class="white">Platform:</span>       <span class="val">pump.fun</span>',d:2000},
+{t:'<span class="white">Market Cap:</span>     <span class="val">$47,832</span>',d:2100},
+{t:'<span class="white">Holders:</span>        <span class="val">312</span>',d:2200},
+{t:'',d:2300},
+{t:'<span class="info">-- RISK ASSESSMENT --</span>',d:2400},
+{t:'<span class="white">Scam Score:</span>     <span class="danger">HIGH (82/100)</span>',d:2600},
+{t:'<span class="white">Bundle Detected:</span> <span class="danger">YES - 14 wallets, same funding source</span>',d:2800},
+{t:'<span class="white">Dev Supply Est:</span> <span class="warn">~18.4% (timing analysis)</span>',d:3000},
+{t:'<span class="white">Private Swaps:</span>  <span class="danger">3 detected within first 30s</span>',d:3200},
+{t:'',d:3400},
+{t:'<span class="info">-- DEVELOPER PROFILE --</span>',d:3500},
+{t:'<span class="white">Funding:</span>        <span class="warn">Fresh wallet, funded via 2-hop from known rugger</span>',d:3700},
+{t:'<span class="white">Past Projects:</span>  <span class="danger">2 confirmed rugs (MOONCAT, YOLODOGE)</span>',d:3900},
+{t:'<span class="white">Twitter:</span>        <span class="warn">Created 3 days ago, 47 followers, all bots</span>',d:4100},
+{t:'',d:4300},
+{t:'<span class="info">-- TOP HOLDERS PNL --</span>',d:4400},
+{t:'<span class="dim">  Wallet ...3kFx:</span>  <span class="val">+$12,400 (still holding 8.2%)</span>',d:4600},
+{t:'<span class="dim">  Wallet ...9mRp:</span>  <span class="danger">-$3,200 (bought at peak)</span>',d:4700},
+{t:'<span class="dim">  Wallet ...2vNq:</span>  <span class="val">+$890 (partial exit)</span>',d:4800},
+{t:'',d:5000},
+{t:'<span class="danger">VERDICT: HIGH RISK -- Likely coordinated rug. Avoid.</span>',d:5200},
+{t:'<span class="prompt">$</span> <span class="dim">_</span>',d:5500},
+];
+let termStarted=false;
+const termObs=new IntersectionObserver((entries)=>{
+entries.forEach(e=>{if(e.isIntersecting&&!termStarted){
+termStarted=true;
+const out=document.getElementById('terminal-output');
+termLines.forEach((line,i)=>{
+setTimeout(()=>{const div=document.createElement('div');div.className='t-line';div.innerHTML=line.t||'&nbsp;';div.style.animationDelay='0s';out.appendChild(div);out.parentElement.scrollTop=out.scrollHeight},line.d);
+});
+termObs.unobserve(e.target);
+}})
+},{threshold:.3});
+termObs.observe(document.getElementById('terminal-demo'));
+</script>
+</body>
+</html>
