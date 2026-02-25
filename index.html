@@ -38,10 +38,20 @@ body.no-scroll{overflow:hidden}
 #landing{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .6s,transform .6s}
 #landing.hidden{opacity:0;transform:scale(1.05);pointer-events:none}
 #landing .mascot-landing{width:260px;height:260px;border-radius:20px;object-fit:cover;border:2px solid var(--green);box-shadow:0 0 60px rgba(0,255,136,.2);animation:mascot-pulse 3s ease-in-out infinite}
-@keyframes mascot-pulse{0%,100%{box-shadow:0 0 60px rgba(0,255,136,.2)}50%{box-shadow:0 0 100px rgba(0,255,136,.35)}}
+@keyframes mascot-pulse{0%,100%{box-shadow:0 0 60px rgba(0,255,136,.2);transform:translateY(0) rotate(-1deg)}50%{box-shadow:0 0 100px rgba(0,255,136,.35);transform:translateY(-8px) rotate(1deg)}}
+@keyframes mascot-bob{0%,100%{transform:translateY(0) rotate(-2deg)}25%{transform:translateY(-8px) rotate(0deg)}50%{transform:translateY(0) rotate(2deg)}75%{transform:translateY(-4px) rotate(0deg)}}
+#landing .mascot-landing{animation:mascot-pulse 3s ease-in-out infinite, mascot-bob 4s ease-in-out infinite}
 #landing h1{font-family:var(--sans);font-size:clamp(2rem,5vw,3.5rem);color:var(--green);margin-top:30px;letter-spacing:-1px}
-#landing p{font-family:var(--mono);font-size:14px;color:var(--text-dim);margin-top:12px;text-align:center;max-width:400px;padding:0 20px}
-#enter-btn{margin-top:36px;padding:14px 48px;background:transparent;border:1px solid var(--green);color:var(--green);font-family:var(--mono);font-size:14px;letter-spacing:2px;cursor:pointer;position:relative;overflow:hidden;transition:all .3s}
+
+/* LANDING NARRATIVE */
+#landing-narrative{margin-top:20px;max-width:560px;padding:0 20px;text-align:center}
+.narrative-line{font-family:var(--mono);font-size:13px;color:var(--text-dim);opacity:0;transform:translateY(12px);transition:opacity .5s ease, transform .5s ease;margin:6px 0;line-height:1.6}
+.narrative-line.visible{opacity:1;transform:translateY(0)}
+.narrative-line.highlight{color:var(--green);font-weight:600;font-size:14px}
+.narrative-line.white-text{color:#ccc}
+
+#enter-btn{margin-top:36px;padding:14px 48px;background:transparent;border:1px solid var(--green);color:var(--green);font-family:var(--mono);font-size:14px;letter-spacing:2px;cursor:pointer;position:relative;overflow:hidden;transition:all .3s;opacity:0;transform:translateY(10px);transition:all .5s}
+#enter-btn.show{opacity:1;transform:translateY(0)}
 #enter-btn:hover{background:var(--green);color:#000;box-shadow:0 0 40px rgba(0,255,136,.3)}
 #enter-btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(0,255,136,.2),transparent);transition:left .5s}
 #enter-btn:hover::before{left:100%}
@@ -128,6 +138,22 @@ section{padding:100px 20px;max-width:1100px;margin:0 auto;position:relative}
 .t-line{opacity:0;animation:t-appear .3s forwards}
 @keyframes t-appear{to{opacity:1}}
 
+/* CA SCANNER */
+#ca-scanner{margin-top:48px;max-width:800px}
+.scanner-input-row{display:flex;gap:12px;margin-bottom:16px}
+.scanner-input-row input{flex:1;padding:12px 16px;background:#0a0a0a;border:1px solid rgba(0,255,136,.2);border-radius:8px;color:var(--green);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .3s}
+.scanner-input-row input:focus{border-color:var(--green)}
+.scanner-input-row input::placeholder{color:#444}
+.scanner-input-row button{padding:12px 24px;background:var(--green);color:#000;border:none;font-family:var(--mono);font-weight:600;font-size:13px;border-radius:8px;cursor:pointer;letter-spacing:1px;transition:all .3s;white-space:nowrap}
+.scanner-input-row button:hover{box-shadow:0 0 30px rgba(0,255,136,.3)}
+.scanner-input-row button:disabled{opacity:.5;cursor:not-allowed}
+#scanner-output{background:#0a0a0a;border:1px solid rgba(0,255,136,.1);border-radius:12px;padding:20px;min-height:120px;font-family:var(--mono);font-size:12px;line-height:1.8;color:var(--text-dim)}
+
+/* CHAT INPUT TEASE */
+.chat-tease{margin-top:24px;display:flex;align-items:center;gap:12px}
+.chat-tease input{flex:1;padding:12px 16px;background:#0a0a0a;border:1px solid rgba(0,255,136,.08);border-radius:8px;color:#555;font-family:var(--mono);font-size:13px;cursor:not-allowed}
+.chat-tease .tease-label{font-family:var(--mono);font-size:12px;color:var(--green);white-space:nowrap}
+
 /* LAUNCH */
 .launch-section{text-align:center}
 .launch-box{background:linear-gradient(135deg,rgba(0,255,136,.04),rgba(0,255,136,.01));border:1px solid rgba(0,255,136,.15);border-radius:16px;padding:48px;margin-top:40px;max-width:700px;margin-left:auto;margin-right:auto}
@@ -137,6 +163,8 @@ section{padding:100px 20px;max-width:1100px;margin:0 auto;position:relative}
 .launch-detail{padding:16px;background:rgba(0,0,0,.4);border-radius:8px;border:1px solid rgba(0,255,136,.06)}
 .launch-detail .label{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
 .launch-detail .value{font-family:var(--sans);color:#fff;font-size:15px}
+.hackathon-badge{display:inline-block;margin-top:20px;padding:8px 20px;border:1px solid var(--green);border-radius:8px;font-family:var(--mono);font-size:12px;color:var(--green);letter-spacing:1px;animation:hackathon-glow 2s ease-in-out infinite}
+@keyframes hackathon-glow{0%,100%{box-shadow:0 0 10px rgba(0,255,136,.1)}50%{box-shadow:0 0 25px rgba(0,255,136,.25)}}
 
 /* FOOTER */
 footer{border-top:1px solid rgba(0,255,136,.08);padding:40px 20px;text-align:center;margin-top:60px}
@@ -155,6 +183,9 @@ footer p{color:var(--text-dim);font-size:12px;margin-top:12px;font-family:var(--
 /* COUNTER */
 .counter{font-family:var(--mono);font-size:clamp(2rem,5vw,3.5rem);color:var(--green);font-weight:700}
 
+/* BASS DROP FLASH */
+.bass-flash{position:fixed;inset:0;z-index:201;background:var(--green);opacity:0;pointer-events:none;transition:opacity .08s}
+
 /* RESPONSIVE */
 @media(max-width:768px){
 .hero{flex-direction:column-reverse;text-align:center;gap:30px;padding-top:40px}
@@ -167,10 +198,14 @@ footer p{color:var(--text-dim);font-size:12px;margin-top:12px;font-family:var(--
 .terminal{font-size:11px}
 #landing .mascot-landing{width:180px;height:180px}
 section{padding:60px 16px}
+.scanner-input-row{flex-direction:column}
 }
 </style>
 </head>
 <body class="no-scroll">
+
+<!-- BASS DROP FLASH -->
+<div class="bass-flash" id="bass-flash"></div>
 
 <!-- CURSOR GLOW -->
 <div id="cursor-glow"></div>
@@ -183,15 +218,17 @@ section{padding:60px 16px}
 <span>$TRENCHEE -- THE ULTIMATE TRENCHING COMPANION</span>
 <span>LAUNCHING ON PUMP.FUN</span>
 <span>SCAM DETECTION / DEVELOPER ANALYSIS / HOLDER PNL TRACKING</span>
-<span>TAG @__TRENCHEE ON X WITH ANY CA</span>
+<span>TAG @TRENCHEE ON X WITH ANY CA</span>
 <span>TRAINED ON EVERY ASPECT OF CRYPTO TWITTER</span>
 <span>STOP GETTING RUGGED -- LET TRENCHEE ANALYZE FIRST</span>
+<span>🏆 ENTERING PUMP.FUN HACKATHON</span>
 <span>$TRENCHEE -- THE ULTIMATE TRENCHING COMPANION</span>
 <span>LAUNCHING ON PUMP.FUN</span>
 <span>SCAM DETECTION / DEVELOPER ANALYSIS / HOLDER PNL TRACKING</span>
-<span>TAG @__TRENCHEE ON X WITH ANY CA</span>
+<span>TAG @TRENCHEE ON X WITH ANY CA</span>
 <span>TRAINED ON EVERY ASPECT OF CRYPTO TWITTER</span>
 <span>STOP GETTING RUGGED -- LET TRENCHEE ANALYZE FIRST</span>
+<span>🏆 ENTERING PUMP.FUN HACKATHON</span>
 </div>
 </div>
 
@@ -199,7 +236,19 @@ section{padding:60px 16px}
 <div id="landing">
 <img src="mascot.jpg" alt="Trenchee" class="mascot-landing">
 <h1>TRENCHEE</h1>
-<p>AI-powered memecoin analysis. Scam detection. Developer tracking. Your edge in the trenches.</p>
+<div id="landing-narrative">
+<div class="narrative-line">The pump.fun ecosystem is dying.</div>
+<div class="narrative-line">Scams everywhere. Bundled launches. Insider rugs.</div>
+<div class="narrative-line">New traders get destroyed daily.</div>
+<div class="narrative-line white-text">Until now.</div>
+<div class="narrative-line highlight">Trenchee is revolutionary technology for pump.fun.</div>
+<div class="narrative-line">Trained on all of crypto twitter.</div>
+<div class="narrative-line">Every bundle pattern. Every KOL. Every scam playbook.</div>
+<div class="narrative-line white-text">Think ChatGPT — but for crypto trenches.</div>
+<div class="narrative-line">Built by someone who's been trading full-time for 1.5 years. Profitably.</div>
+<div class="narrative-line">Not a grifter. Not a KOL. A builder.</div>
+<div class="narrative-line highlight">Trenchee will become a household name.</div>
+</div>
 <button id="enter-btn">ENTER APP</button>
 </div>
 
@@ -219,6 +268,24 @@ section{padding:60px 16px}
 </div>
 <div class="hero-mascot">
 <img src="mascot.jpg" alt="Trenchee Mascot">
+</div>
+</section>
+
+<!-- TERMINAL DEMO (moved after hero, before problem) -->
+<section>
+<div class="reveal">
+<div class="section-tag">// Live Demo</div>
+<div class="section-title">See Trenchee in Action</div>
+<div class="section-desc">Simulated analysis output for a contract address.</div>
+</div>
+<div class="terminal reveal" id="terminal-demo">
+<div class="terminal-header">
+<div class="terminal-dot r"></div>
+<div class="terminal-dot y"></div>
+<div class="terminal-dot g"></div>
+<span class="terminal-title">trenchee-v1.0 -- analysis engine</span>
+</div>
+<div class="terminal-body" id="terminal-output"></div>
 </div>
 </section>
 
@@ -267,6 +334,36 @@ section{padding:60px 16px}
 <div class="big-stat counter" data-target="98.7">0</div>
 <div class="stat-label">Analysis Accuracy Rate (%)</div>
 </div>
+</div>
+</section>
+
+<!-- CA SCANNER -->
+<section>
+<div class="reveal">
+<div class="section-tag">// Live Scanner</div>
+<div class="section-title">Scan Any Token</div>
+<div class="section-desc">Paste a Solana contract address. Get instant on-chain data from DexScreener and Helius.</div>
+</div>
+<div id="ca-scanner" class="reveal">
+<div class="scanner-input-row">
+<input type="text" id="ca-input" placeholder="Paste Solana contract address..." spellcheck="false" autocomplete="off">
+<button id="ca-scan-btn" onclick="scanCA()">SCAN</button>
+</div>
+<div id="scanner-output">
+<span class="dim">Awaiting contract address...</span>
+</div>
+<div class="chat-tease">
+<input type="text" disabled placeholder="Chat with Trenchee coming soon...">
+<a href="https://t.me/trencheeagent_bot" target="_blank" class="tease-label">join @trencheeagent_bot →</a>
+</div>
+</div>
+</section>
+
+<!-- POOLSIDE BREAK -->
+<section style="text-align:center;padding:40px 20px">
+<div class="reveal">
+<img src="poolside.jpg" alt="Trenchee Relaxing" style="max-width:700px;width:100%;border-radius:16px;border:1px solid rgba(0,255,136,.15);box-shadow:0 0 60px rgba(0,255,136,.1)">
+<p style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-top:12px">while you stress about rugs, trenchee stays chill 🏊</p>
 </div>
 </section>
 
@@ -335,25 +432,7 @@ section{padding:60px 16px}
 </div>
 </section>
 
-<!-- TERMINAL DEMO -->
-<section>
-<div class="reveal">
-<div class="section-tag">// Live Demo</div>
-<div class="section-title">See Trenchee in Action</div>
-<div class="section-desc">Simulated analysis output for a contract address.</div>
-</div>
-<div class="terminal reveal" id="terminal-demo">
-<div class="terminal-header">
-<div class="terminal-dot r"></div>
-<div class="terminal-dot y"></div>
-<div class="terminal-dot g"></div>
-<span class="terminal-title">trenchee-v1.0 -- analysis engine</span>
-</div>
-<div class="terminal-body" id="terminal-output"></div>
-</div>
-</section>
-
-<!-- LAUNCH -->
+<!-- LAUNCH / TOKENOMICS -->
 <section class="launch-section">
 <div class="reveal">
 <div class="section-tag">// Token Launch</div>
@@ -363,7 +442,7 @@ section{padding:60px 16px}
 <div class="launch-box reveal shimmer">
 <h3>$TRENCHEE</h3>
 <div class="platform">pump.fun // Solana SPL</div>
-<p style="color:var(--text-dim);font-size:14px;max-width:500px;margin:0 auto">Dev buys 2% and sells instantly. All fees fund the Twitter developer kit costs first, then flow back as rewards to active users and holders.</p>
+<p style="color:var(--text-dim);font-size:14px;max-width:500px;margin:0 auto">10% dev allocation — fully LOCKED. Revenue from the Twitter developer kit and platform fees flow back as rewards to active users and holders.</p>
 <div class="launch-details">
 <div class="launch-detail">
 <div class="label">Platform</div>
@@ -371,7 +450,7 @@ section{padding:60px 16px}
 </div>
 <div class="launch-detail">
 <div class="label">Dev Allocation</div>
-<div class="value">2% (sold immediately)</div>
+<div class="value">10% (LOCKED)</div>
 </div>
 <div class="launch-detail">
 <div class="label">Fee Usage</div>
@@ -381,6 +460,24 @@ section{padding:60px 16px}
 <div class="label">Network</div>
 <div class="value">Solana</div>
 </div>
+</div>
+<div class="hackathon-badge">🏆 ENTERING PUMP.FUN HACKATHON</div>
+</div>
+</section>
+
+<!-- GALLERY -->
+<section>
+<div class="reveal">
+<div class="section-tag">// Gallery</div>
+<div class="section-title">Meet Trenchee</div>
+<div class="section-desc">Your AI companion, living in the trenches.</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:48px" class="reveal">
+<div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,255,136,.15)">
+<img src="poolside.jpg" alt="Trenchee poolside" style="width:100%;display:block">
+</div>
+<div style="border-radius:12px;overflow:hidden;border:1px solid rgba(0,255,136,.15)">
+<img src="mascot2.jpg" alt="Trenchee whiteboard" style="width:100%;display:block">
 </div>
 </div>
 </section>
@@ -402,10 +499,57 @@ document.addEventListener('mousemove',e=>{glow.style.left=e.clientX+'px';glow.st
 const pc=document.getElementById('particles');
 for(let i=0;i<40;i++){const p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.animationDuration=(8+Math.random()*12)+'s';p.style.animationDelay=Math.random()*10+'s';p.style.width=p.style.height=(1+Math.random()*2)+'px';pc.appendChild(p)}
 
+// LANDING NARRATIVE - line by line reveal
+(function(){
+const lines=document.querySelectorAll('.narrative-line');
+const btn=document.getElementById('enter-btn');
+lines.forEach((line,i)=>{
+setTimeout(()=>{line.classList.add('visible')},600+i*400);
+});
+setTimeout(()=>{btn.classList.add('show')},600+lines.length*400+300);
+})();
+
+// BASS DROP via Web Audio API
+function playBassDrop(){
+try{
+const ctx=new(window.AudioContext||window.webkitAudioContext)();
+// Sub bass
+const osc=ctx.createOscillator();
+const gain=ctx.createGain();
+osc.type='sine';
+osc.frequency.setValueAtTime(80,ctx.currentTime);
+osc.frequency.exponentialRampToValueAtTime(20,ctx.currentTime+0.8);
+gain.gain.setValueAtTime(1,ctx.currentTime);
+gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+1.2);
+osc.connect(gain);
+gain.connect(ctx.destination);
+osc.start(ctx.currentTime);
+osc.stop(ctx.currentTime+1.2);
+// Impact noise burst
+const buf=ctx.createBuffer(1,ctx.sampleRate*0.15,ctx.sampleRate);
+const data=buf.getChannelData(0);
+for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*Math.exp(-i/(ctx.sampleRate*0.03));
+const noise=ctx.createBufferSource();
+noise.buffer=buf;
+const nGain=ctx.createGain();
+nGain.gain.setValueAtTime(0.6,ctx.currentTime);
+nGain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
+const lp=ctx.createBiquadFilter();
+lp.type='lowpass';lp.frequency.value=200;
+noise.connect(lp);lp.connect(nGain);nGain.connect(ctx.destination);
+noise.start(ctx.currentTime);
+// Visual flash
+const flash=document.getElementById('bass-flash');
+flash.style.opacity='0.15';
+setTimeout(()=>{flash.style.opacity='0'},80);
+}catch(e){}
+}
+
 // LANDING
 const landing=document.getElementById('landing');
 const mainSite=document.getElementById('main-site');
 document.getElementById('enter-btn').addEventListener('click',()=>{
+playBassDrop();
 landing.classList.add('hidden');
 document.body.classList.remove('no-scroll');
 setTimeout(()=>{mainSite.classList.add('visible');landing.style.display='none'},600);
@@ -478,6 +622,98 @@ termObs.unobserve(e.target);
 }})
 },{threshold:.3});
 termObs.observe(document.getElementById('terminal-demo'));
+
+// ===== LIVE CA SCANNER =====
+async function scanCA(){
+const ca=document.getElementById('ca-input').value.trim();
+const out=document.getElementById('scanner-output');
+const btn=document.getElementById('ca-scan-btn');
+if(!ca||ca.length<32){out.innerHTML='<span class="danger">Invalid address. Paste a Solana contract address.</span>';return}
+btn.disabled=true;btn.textContent='SCANNING...';
+out.innerHTML='<span class="dim">[+] Fetching DexScreener data...</span>';
+
+let dexData=null,heliusData=null;
+
+// DexScreener
+try{
+const r=await fetch('https://api.dexscreener.com/latest/dex/tokens/'+ca);
+const j=await r.json();
+if(j.pairs&&j.pairs.length>0) dexData=j.pairs[0];
+}catch(e){}
+
+out.innerHTML+='<br><span class="dim">[+] Querying Helius RPC...</span>';
+
+// Helius - get token account info
+try{
+const r=await fetch('https://mainnet.helius-rpc.com/?api-key=55ce350b-be19-40a0-8a2a-f1616fc0a4e7',{
+method:'POST',headers:{'Content-Type':'application/json'},
+body:JSON.stringify({jsonrpc:'2.0',id:1,method:'getAsset',params:{id:ca}})
+});
+const j=await r.json();
+if(j.result) heliusData=j.result;
+}catch(e){}
+
+out.innerHTML+='<br><span class="dim">[+] Compiling results...</span><br><br>';
+
+let html='<span class="info">====== TRENCHEE SCAN RESULTS ======</span><br><br>';
+
+if(dexData){
+const mc=dexData.marketCap?'$'+Number(dexData.marketCap).toLocaleString():'N/A';
+const vol=dexData.volume?.h24?'$'+Number(dexData.volume.h24).toLocaleString():'N/A';
+const liq=dexData.liquidity?.usd?'$'+Number(dexData.liquidity.usd).toLocaleString():'N/A';
+const price=dexData.priceUsd?'$'+parseFloat(dexData.priceUsd).toPrecision(4):'N/A';
+const chg=dexData.priceChange?.h24;
+const chgColor=chg>=0?'val':'danger';
+const chgStr=chg!==undefined?(chg>=0?'+':'')+chg.toFixed(1)+'%':'N/A';
+html+='<span class="white">Token:</span>       <span class="val">'+(dexData.baseToken?.name||'Unknown')+'</span><br>';
+html+='<span class="white">Ticker:</span>      <span class="val">$'+(dexData.baseToken?.symbol||'???')+'</span><br>';
+html+='<span class="white">DEX:</span>         <span class="val">'+(dexData.dexId||'unknown')+'</span><br>';
+html+='<span class="white">Price:</span>       <span class="val">'+price+'</span><br>';
+html+='<span class="white">24h Change:</span>  <span class="'+chgColor+'">'+chgStr+'</span><br>';
+html+='<span class="white">Market Cap:</span>  <span class="val">'+mc+'</span><br>';
+html+='<span class="white">Liquidity:</span>   <span class="val">'+liq+'</span><br>';
+html+='<span class="white">24h Volume:</span>  <span class="val">'+vol+'</span><br>';
+if(dexData.info?.websites?.[0]?.url) html+='<span class="white">Website:</span>     <span class="dim">'+dexData.info.websites[0].url+'</span><br>';
+}else{
+html+='<span class="warn">No DexScreener data found. Token may not be trading yet.</span><br>';
+}
+
+html+='<br>';
+
+if(heliusData){
+const meta=heliusData.content?.metadata;
+html+='<span class="info">-- HELIUS ASSET DATA --</span><br>';
+if(meta?.name) html+='<span class="white">Name:</span>        <span class="val">'+meta.name+'</span><br>';
+if(meta?.symbol) html+='<span class="white">Symbol:</span>      <span class="val">'+meta.symbol+'</span><br>';
+if(heliusData.token_info?.supply){
+const supply=Number(heliusData.token_info.supply);
+const decimals=heliusData.token_info.decimals||0;
+html+='<span class="white">Supply:</span>      <span class="val">'+(supply/Math.pow(10,decimals)).toLocaleString()+'</span><br>';
+}
+if(heliusData.authorities?.length>0){
+html+='<span class="white">Authorities:</span> <span class="dim">'+heliusData.authorities.length+' found</span><br>';
+heliusData.authorities.forEach(a=>{
+html+='<span class="dim">  '+a.scopes?.join(',')+': '+a.address?.slice(0,8)+'...'+a.address?.slice(-4)+'</span><br>';
+});
+}
+const frozen=heliusData.token_info?.freeze_authority;
+if(frozen) html+='<span class="white">Freeze Auth:</span> <span class="danger">EXISTS — '+frozen.slice(0,8)+'...</span><br>';
+else html+='<span class="white">Freeze Auth:</span> <span class="val">None ✓</span><br>';
+const mintAuth=heliusData.token_info?.mint_authority;
+if(mintAuth) html+='<span class="white">Mint Auth:</span>   <span class="danger">EXISTS — '+mintAuth.slice(0,8)+'...</span><br>';
+else html+='<span class="white">Mint Auth:</span>   <span class="val">Renounced ✓</span><br>';
+}else{
+html+='<span class="dim">No Helius asset data returned.</span><br>';
+}
+
+html+='<br><span class="prompt">$</span> <span class="dim">_</span>';
+out.innerHTML=html;
+btn.disabled=false;btn.textContent='SCAN';
+}
+window.scanCA=scanCA;
+
+// Allow Enter key in CA input
+document.getElementById('ca-input').addEventListener('keydown',e=>{if(e.key==='Enter')scanCA()});
 </script>
 </body>
 </html>
