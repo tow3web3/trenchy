@@ -667,9 +667,9 @@ const supply=Number(supplyData.value.uiAmountString||0);
 S('Total Supply: ',supply.toLocaleString());
 S('Decimals:     ',String(supplyData.value.decimals||0));
 }
-if(ti.freeze_authority)S('Freeze Auth:  ','⚠️ ACTIVE — '+ti.freeze_authority.slice(0,12)+'...','danger');
+if(ti.freeze_authority)S('Freeze Auth:  ',ti.freeze_authority.slice(0,12)+'... (standard on pump.fun)','dim');
 else S('Freeze Auth:  ','None ✓');
-if(ti.mint_authority)S('Mint Auth:    ','⚠️ ACTIVE — '+ti.mint_authority.slice(0,12)+'...','danger');
+if(ti.mint_authority)S('Mint Auth:    ',ti.mint_authority.slice(0,12)+'... (standard on pump.fun)','dim');
 else S('Mint Auth:    ','Renounced ✓');
 if(asset?.authorities?.length){
 S('Authorities:  ',asset.authorities.length+' detected');
@@ -802,9 +802,8 @@ else S('Meta Timing:  ',Math.floor(age/24)+'d old — established or stale','dim
 // OVERALL RISK SCORE
 H('▸ TRENCHEE VERDICT');
 let risk=0;let flags=[];
-// Authority risks
-if(ti.freeze_authority){risk+=2;flags.push('Freeze authority active')}
-if(ti.mint_authority){risk+=2;flags.push('Mint authority active')}
+// Authority risks (not flagged for pump.fun — standard there)
+// Freeze + mint auth are normal on pump.fun tokens
 // Holder concentration
 if(holdersData?.value?.length){
 const supply=supplyData?.value?Number(supplyData.value.uiAmountString||0):0;
