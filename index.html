@@ -673,20 +673,22 @@ const holders=holdersData.value;
 const totalFromHolders=holders.reduce((s,h)=>s+Number(h.uiAmountString||0),0);
 const supply=supplyData?.value?Number(supplyData.value.uiAmountString||0):totalFromHolders;
 let top1pct=0,top5pct=0,top10pct=0;
+// Skip #1 holder (liquidity pool)
 holders.forEach((holder,i)=>{
 const amt=Number(holder.uiAmountString||0);
 const pct=supply>0?(amt/supply*100):0;
-if(i<1)top1pct=pct;
-if(i<5)top5pct+=pct;
-if(i<10)top10pct+=pct;
 const addr=holder.address||'?';
+if(i===0){h+='<span class="dim">  1. '+addr.slice(0,6)+'...'+addr.slice(-4)+' — '+pct.toFixed(2)+'% (Liquidity Pool)</span><br>';return}
+if(i<2)top1pct=pct;
+if(i<6)top5pct+=pct;
+if(i<11)top10pct+=pct;
 const pctColor=pct>10?'danger':pct>5?'warn':'val';
-if(i<10)h+='<span class="dim">  '+(i+1)+'. '+addr.slice(0,6)+'...'+addr.slice(-4)+'</span> <span class="'+pctColor+'">'+amt.toLocaleString()+' ('+pct.toFixed(2)+'%)</span><br>';
+if(i<11)h+='<span class="dim">  '+(i+1)+'. '+addr.slice(0,6)+'...'+addr.slice(-4)+'</span> <span class="'+pctColor+'">'+amt.toLocaleString()+' ('+pct.toFixed(2)+'%)</span><br>';
 });
 h+='<br>';
-S('Top 1 Holder: ',top1pct.toFixed(2)+'% of supply',top1pct>15?'danger':top1pct>8?'warn':'val');
-S('Top 5 Holders:',top5pct.toFixed(2)+'% of supply',top5pct>40?'danger':top5pct>25?'warn':'val');
-S('Top 10 Holdr: ',top10pct.toFixed(2)+'% of supply',top10pct>60?'danger':top10pct>40?'warn':'val');
+S('Top Holder:   ',top1pct.toFixed(2)+'% of supply (excl. LP)',top1pct>15?'danger':top1pct>8?'warn':'val');
+S('Top 5 Holders:',top5pct.toFixed(2)+'% (excl. LP)',top5pct>40?'danger':top5pct>25?'warn':'val');
+S('Top 10 Holdr: ',top10pct.toFixed(2)+'% (excl. LP)',top10pct>60?'danger':top10pct>40?'warn':'val');
 
 // Check for same-source clusters (simple: if multiple top holders have similar amounts)
 const amounts=holders.slice(0,10).map(h=>Number(h.uiAmountString||0)).filter(a=>a>0);
@@ -797,9 +799,10 @@ let risk=0;let flags=[];
 // Holder concentration
 if(holdersData?.value?.length){
 const supply=supplyData?.value?Number(supplyData.value.uiAmountString||0):0;
-const top1=supply>0?Number(holdersData.value[0]?.uiAmountString||0)/supply*100:0;
-if(top1>20){risk+=2;flags.push('Top holder owns '+top1.toFixed(1)+'%')}
-else if(top1>10){risk+=1;flags.push('Top holder owns '+top1.toFixed(1)+'%')}
+// Skip index 0 (LP), check index 1 (actual top holder)
+const top1=supply>0&&holdersData.value[1]?Number(holdersData.value[1]?.uiAmountString||0)/supply*100:0;
+if(top1>20){risk+=2;flags.push('Top holder (excl LP) owns '+top1.toFixed(1)+'%')}
+else if(top1>10){risk+=1;flags.push('Top holder (excl LP) owns '+top1.toFixed(1)+'%')}
 }
 // Liquidity
 if(dex){
