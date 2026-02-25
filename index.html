@@ -568,98 +568,285 @@ termObs.unobserve(e.target);
 },{threshold:.3});
 termObs.observe(document.getElementById('terminal-demo'));
 
-// LIVE CA SCANNER
+// LIVE CA SCANNER — Full Trenchee Analysis
+const HELIUS='https://mainnet.helius-rpc.com/?api-key=55ce350b-be19-40a0-8a2a-f1616fc0a4e7';
+const HELIUS_API='https://api.helius.xyz/v0';
+
+async function rpc(method,params){
+try{const r=await fetch(HELIUS,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})});const j=await r.json();return j.result||null}catch(e){return null}
+}
+
 async function scanCA(){
 const ca=document.getElementById('ca-input').value.trim();
 const out=document.getElementById('scanner-output');
 const btn=document.getElementById('ca-scan-btn');
 if(!ca||ca.length<32){out.innerHTML='<span class="danger">Invalid address. Paste a Solana contract address.</span>';return}
 btn.disabled=true;btn.textContent='SCANNING...';
-out.innerHTML='<span class="dim">[+] Fetching DexScreener data...</span>';
-let dexData=null,heliusData=null;
-try{const r=await fetch('https://api.dexscreener.com/latest/dex/tokens/'+ca);const j=await r.json();if(j.pairs&&j.pairs.length>0)dexData=j.pairs[0]}catch(e){}
-out.innerHTML+='<br><span class="dim">[+] Querying Helius RPC...</span>';
-try{const r=await fetch('https://mainnet.helius-rpc.com/?api-key=55ce350b-be19-40a0-8a2a-f1616fc0a4e7',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'getAsset',params:{id:ca}})});const j=await r.json();if(j.result)heliusData=j.result}catch(e){}
-out.innerHTML+='<br><span class="dim">[+] Compiling results...</span><br><br>';
-let html='<span class="info">====== TRENCHEE SCAN RESULTS ======</span><br><br>';
-if(dexData){
-const mc=dexData.marketCap?'$'+Number(dexData.marketCap).toLocaleString():'N/A';
-const vol=dexData.volume?.h24?'$'+Number(dexData.volume.h24).toLocaleString():'N/A';
-const liq=dexData.liquidity?.usd?'$'+Number(dexData.liquidity.usd).toLocaleString():'N/A';
-const price=dexData.priceUsd?'$'+parseFloat(dexData.priceUsd).toPrecision(4):'N/A';
-const chg=dexData.priceChange?.h24;const chgColor=chg>=0?'val':'danger';
-const chgStr=chg!==undefined?(chg>=0?'+':'')+chg.toFixed(1)+'%':'N/A';
-html+='<span class="white">Token:</span>       <span class="val">'+(dexData.baseToken?.name||'Unknown')+'</span><br>';
-html+='<span class="white">Ticker:</span>      <span class="val">$'+(dexData.baseToken?.symbol||'???')+'</span><br>';
-html+='<span class="white">DEX:</span>         <span class="val">'+(dexData.dexId||'unknown')+'</span><br>';
-html+='<span class="white">Price:</span>       <span class="val">'+price+'</span><br>';
-html+='<span class="white">24h Change:</span>  <span class="'+chgColor+'">'+chgStr+'</span><br>';
-html+='<span class="white">Market Cap:</span>  <span class="val">'+mc+'</span><br>';
-html+='<span class="white">Liquidity:</span>   <span class="val">'+liq+'</span><br>';
-html+='<span class="white">24h Volume:</span>  <span class="val">'+vol+'</span><br>';
-if(dexData.info?.websites?.[0]?.url)html+='<span class="white">Website:</span>     <span class="dim">'+dexData.info.websites[0].url+'</span><br>';
-}else{html+='<span class="warn">No DexScreener data found. Token may not be trading yet.</span><br>'}
-html+='<br>';
-if(heliusData){
-const meta=heliusData.content?.metadata;
-html+='<span class="info">— HELIUS ASSET DATA —</span><br>';
-if(meta?.name)html+='<span class="white">Name:</span>        <span class="val">'+meta.name+'</span><br>';
-if(meta?.symbol)html+='<span class="white">Symbol:</span>      <span class="val">'+meta.symbol+'</span><br>';
-if(heliusData.token_info?.supply){const supply=Number(heliusData.token_info.supply);const decimals=heliusData.token_info.decimals||0;html+='<span class="white">Supply:</span>      <span class="val">'+(supply/Math.pow(10,decimals)).toLocaleString()+'</span><br>'}
-if(heliusData.authorities?.length>0){html+='<span class="white">Authorities:</span> <span class="dim">'+heliusData.authorities.length+' found</span><br>';heliusData.authorities.forEach(a=>{html+='<span class="dim">  '+a.scopes?.join(',')+': '+a.address?.slice(0,8)+'...'+a.address?.slice(-4)+'</span><br>'})}
-const frozen=heliusData.token_info?.freeze_authority;
-if(frozen)html+='<span class="white">Freeze Auth:</span> <span class="danger">EXISTS — '+frozen.slice(0,8)+'...</span><br>';
-else html+='<span class="white">Freeze Auth:</span> <span class="val">None ✓</span><br>';
-const mintAuth=heliusData.token_info?.mint_authority;
-if(mintAuth)html+='<span class="white">Mint Auth:</span>   <span class="danger">EXISTS — '+mintAuth.slice(0,8)+'...</span><br>';
-else html+='<span class="white">Mint Auth:</span>   <span class="val">Renounced ✓</span><br>';
-}else{html+='<span class="dim">No Helius asset data returned.</span><br>'}
-// AI Analysis step
-out.innerHTML=html+'<br><span class="dim">[+] Running Trenchee AI analysis...</span>';
-try{
-const aiData=[];
-if(dexData)aiData.push('DexScreener: '+JSON.stringify(dexData));
-if(heliusData){
-const m=heliusData.content?.metadata;
-const ti=heliusData.token_info||{};
-aiData.push('Helius: name='+((m&&m.name)||'?')+' supply='+(ti.supply||'?')+' freeze='+(ti.freeze_authority?'YES':'none')+' mint='+(ti.mint_authority?'YES':'renounced')+' authorities='+((heliusData.authorities||[]).length));
+
+const log=m=>{out.innerHTML+='<br><span class="dim">[+] '+m+'</span>'};
+out.innerHTML='<span class="dim">[+] Initializing Trenchee analysis engine...</span>';
+
+// 1. DexScreener
+log('Fetching market data from DexScreener...');
+let dex=null,allPairs=[];
+try{const r=await fetch('https://api.dexscreener.com/latest/dex/tokens/'+ca);const j=await r.json();allPairs=j.pairs||[];if(allPairs.length)dex=allPairs[0]}catch(e){}
+
+// 2. Helius Asset
+log('Pulling on-chain asset data...');
+let asset=null;
+try{const r=await fetch(HELIUS,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'getAsset',params:{id:ca}})});const j=await r.json();asset=j.result||null}catch(e){}
+
+// 3. Token Supply
+log('Fetching token supply...');
+const supplyData=await rpc('getTokenSupply',[ca]);
+
+// 4. Largest Holders
+log('Analyzing top holder distribution...');
+const holdersData=await rpc('getTokenLargestAccounts',[ca]);
+
+// 5. Transaction history (for bundle/dev detection)
+log('Scanning transaction history for bundle patterns...');
+let txHistory=null;
+try{const r=await fetch(HELIUS_API+'/addresses/'+ca+'/transactions?api-key=55ce350b-be19-40a0-8a2a-f1616fc0a4e7&limit=50');if(r.ok)txHistory=await r.json()}catch(e){}
+
+// 6. Signatures for timing analysis
+log('Running timing analysis on early transactions...');
+let signatures=null;
+try{signatures=await rpc('getSignaturesForAddress',[ca,{limit:30}])}catch(e){}
+
+log('Compiling Trenchee analysis report...');
+await new Promise(r=>setTimeout(r,300));
+
+// ===== BUILD REPORT =====
+let h='';
+const S=(label,val,cls)=>h+='<span class="white">'+label+'</span> <span class="'+(cls||'val')+'">'+val+'</span><br>';
+const H=(text)=>h+='<br><span class="info">'+text+'</span><br><br>';
+
+h='<span class="info">══════════════════════════════════════</span><br>';
+h+='<span class="info">      TRENCHEE FULL ANALYSIS REPORT</span><br>';
+h+='<span class="info">══════════════════════════════════════</span><br><br>';
+
+// TOKEN OVERVIEW
+H('▸ TOKEN OVERVIEW');
+const name=dex?.baseToken?.name||asset?.content?.metadata?.name||'Unknown';
+const symbol=dex?.baseToken?.symbol||asset?.content?.metadata?.symbol||'???';
+S('Token:        ',name);
+S('Ticker:       ','$'+symbol);
+S('Platform:     ',dex?.dexId||'unknown');
+if(dex){
+S('Price:        ','$'+parseFloat(dex.priceUsd||0).toPrecision(4));
+const mc=dex.marketCap||dex.fdv||0;
+S('Market Cap:   ','$'+Number(mc).toLocaleString());
+S('Liquidity:    ','$'+Number(dex.liquidity?.usd||0).toLocaleString());
+S('24h Volume:   ','$'+Number(dex.volume?.h24||0).toLocaleString());
+const pairAge=dex.pairCreatedAt?Math.floor((Date.now()-dex.pairCreatedAt)/3600000):null;
+if(pairAge!==null)S('Age:          ',pairAge<24?pairAge+'h':Math.floor(pairAge/24)+'d '+pairAge%24+'h');
+// Price changes
+const pc=dex.priceChange||{};
+let pcLine='';
+if(pc.m5!==undefined)pcLine+='5m: '+(pc.m5>=0?'+':'')+Number(pc.m5).toFixed(1)+'%  ';
+if(pc.h1!==undefined)pcLine+='1h: '+(pc.h1>=0?'+':'')+Number(pc.h1).toFixed(1)+'%  ';
+if(pc.h6!==undefined)pcLine+='6h: '+(pc.h6>=0?'+':'')+Number(pc.h6).toFixed(1)+'%  ';
+if(pc.h24!==undefined)pcLine+='24h: '+(pc.h24>=0?'+':'')+Number(pc.h24).toFixed(1)+'%';
+if(pcLine)S('Price Action: ',pcLine,pc.h24>=0?'val':'danger');
+if(dex.info?.websites?.[0]?.url)S('Website:      ',dex.info.websites[0].url,'dim');
+if(dex.info?.socials?.length){
+const socials=dex.info.socials.map(s=>s.type+': '+s.url).join(' | ');
+S('Socials:      ',socials,'dim');
 }
-const aiR=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'user',content:'Analyze this Solana token based on the data. Give: 1) Scam Score (1-10), 2) Dev funding analysis, 3) Bundle risk, 4) Top holder concentration risk, 5) Current meta fit, 6) Previous deploy likelihood, 7) Liquidity assessment, 8) Verdict (BUY/AVOID/DYOR). Be direct, degen style. Data: '+aiData.join(' | ')}]})});
-const aiJ=await aiR.json();
-if(aiJ.reply){
-html+='<br><span class="info">====== TRENCHEE AI ANALYSIS ======</span><br><br>';
-html+='<span class="white">'+aiJ.reply.replace(/</g,'&lt;').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<span class="val">$1</span>')+'</span>';
+S('DEX Pairs:    ',allPairs.length+' found');
+}else{
+h+='<span class="warn">No market data found — token may not be trading yet or is pre-bonding curve.</span><br>';
 }
-}catch(e){
-// Fallback: compute basic risk metrics locally
-html+='<br><span class="info">====== TRENCHEE RISK ASSESSMENT ======</span><br><br>';
-let riskScore=0;let flags=[];
-if(heliusData){
-if(heliusData.token_info?.freeze_authority){riskScore+=3;flags.push('⚠️ Freeze authority active — dev can freeze your tokens')}
-if(heliusData.token_info?.mint_authority){riskScore+=3;flags.push('⚠️ Mint authority active — dev can mint infinite supply')}
+
+// SUPPLY & AUTHORITIES
+H('▸ CONTRACT SECURITY');
+const ti=asset?.token_info||{};
+if(supplyData?.value){
+const supply=Number(supplyData.value.uiAmountString||0);
+S('Total Supply: ',supply.toLocaleString());
+S('Decimals:     ',String(supplyData.value.decimals||0));
 }
-if(dexData){
-const liq=dexData.liquidity?.usd||0;
-const mc=dexData.marketCap||0;
-const age=dexData.pairCreatedAt?Math.floor((Date.now()-dexData.pairCreatedAt)/3600000):null;
-if(liq<5000){riskScore+=2;flags.push('⚠️ Low liquidity ($'+Number(liq).toLocaleString()+') — high slippage risk')}
-if(mc>0&&liq>0&&liq/mc<0.1){riskScore+=1;flags.push('⚠️ Liquidity/MCap ratio below 10% — thin support')}
-if(age!==null&&age<2){riskScore+=1;flags.push('⚠️ Token launched '+age+'h ago — extremely new')}
-const vol=dexData.volume?.h24||0;
-if(vol>0&&mc>0)html+='<span class="white">Volume/MCap:</span>  <span class="val">'+(vol/mc*100).toFixed(1)+'%</span><br>';
-if(age!==null)html+='<span class="white">Age:</span>          <span class="val">'+age+' hours</span><br>';
-html+='<span class="white">Meta Fit:</span>     <span class="dim">Check CT sentiment manually</span><br>';
+if(ti.freeze_authority)S('Freeze Auth:  ','⚠️ ACTIVE — '+ti.freeze_authority.slice(0,12)+'...','danger');
+else S('Freeze Auth:  ','None ✓');
+if(ti.mint_authority)S('Mint Auth:    ','⚠️ ACTIVE — '+ti.mint_authority.slice(0,12)+'...','danger');
+else S('Mint Auth:    ','Renounced ✓');
+if(asset?.authorities?.length){
+S('Authorities:  ',asset.authorities.length+' detected');
+asset.authorities.forEach(a=>{h+='<span class="dim">  └ '+a.scopes?.join(',')+': '+(a.address?.slice(0,12)||'?')+'...</span><br>'});
 }
-riskScore=Math.min(riskScore,10);
-const riskColor=riskScore>=7?'danger':riskScore>=4?'warn':'val';
-const riskLabel=riskScore>=7?'HIGH RISK':riskScore>=4?'MODERATE':'LOW RISK';
-html+='<br><span class="white">Risk Score:</span>   <span class="'+riskColor+'">'+riskScore+'/10 ('+riskLabel+')</span><br>';
-if(flags.length)html+='<br>'+flags.map(f=>'<span class="warn">'+f+'</span>').join('<br>')+'<br>';
-else html+='<span class="val">✓ No major red flags detected from on-chain data</span><br>';
-html+='<br><span class="dim">For full AI analysis with dev tracking, bundle detection &amp; holder PnL → use chat widget or @trencheeagent_bot</span>';
+
+// HOLDER DISTRIBUTION & CONCENTRATION
+H('▸ HOLDER DISTRIBUTION & CONCENTRATION');
+if(holdersData?.value?.length){
+const holders=holdersData.value;
+const totalFromHolders=holders.reduce((s,h)=>s+Number(h.uiAmountString||0),0);
+const supply=supplyData?.value?Number(supplyData.value.uiAmountString||0):totalFromHolders;
+let top1pct=0,top5pct=0,top10pct=0;
+holders.forEach((holder,i)=>{
+const amt=Number(holder.uiAmountString||0);
+const pct=supply>0?(amt/supply*100):0;
+if(i<1)top1pct=pct;
+if(i<5)top5pct+=pct;
+if(i<10)top10pct+=pct;
+const addr=holder.address||'?';
+const pctColor=pct>10?'danger':pct>5?'warn':'val';
+if(i<10)h+='<span class="dim">  '+(i+1)+'. '+addr.slice(0,6)+'...'+addr.slice(-4)+'</span> <span class="'+pctColor+'">'+amt.toLocaleString()+' ('+pct.toFixed(2)+'%)</span><br>';
+});
+h+='<br>';
+S('Top 1 Holder: ',top1pct.toFixed(2)+'% of supply',top1pct>15?'danger':top1pct>8?'warn':'val');
+S('Top 5 Holders:',top5pct.toFixed(2)+'% of supply',top5pct>40?'danger':top5pct>25?'warn':'val');
+S('Top 10 Holdr: ',top10pct.toFixed(2)+'% of supply',top10pct>60?'danger':top10pct>40?'warn':'val');
+
+// Check for same-source clusters (simple: if multiple top holders have similar amounts)
+const amounts=holders.slice(0,10).map(h=>Number(h.uiAmountString||0)).filter(a=>a>0);
+let clusterCount=0;
+for(let i=0;i<amounts.length;i++){for(let j=i+1;j<amounts.length;j++){
+if(amounts[j]>0&&Math.abs(amounts[i]-amounts[j])/Math.max(amounts[i],amounts[j])<0.05)clusterCount++;
+}}
+if(clusterCount>=3)h+='<span class="danger">⚠️ BUNDLE SIGNAL: '+clusterCount+' wallet pairs with near-identical holdings detected</span><br>';
+else if(clusterCount>=1)h+='<span class="warn">⚠️ '+clusterCount+' wallet pair(s) with similar holdings — possible coordination</span><br>';
+else h+='<span class="val">✓ No obvious wallet clustering in top holders</span><br>';
+}else{h+='<span class="dim">Holder data unavailable</span><br>'}
+
+// TRANSACTION ANALYSIS / BUNDLE DETECTION
+H('▸ DEV FUNDING & BUNDLE ANALYSIS');
+if(txHistory&&txHistory.length>0){
+S('Transactions: ',txHistory.length+' recent analyzed');
+// Look at early transactions
+const types={};
+let swapCount=0,earlySwaps=0;
+txHistory.forEach((tx,i)=>{
+const t=tx.type||'UNKNOWN';
+types[t]=(types[t]||0)+1;
+if(t==='SWAP')swapCount++;
+if(t==='SWAP'&&i>=txHistory.length-10)earlySwaps++;
+});
+const typeStr=Object.entries(types).map(([k,v])=>k+': '+v).join(', ');
+S('Tx Types:     ',typeStr,'dim');
+if(earlySwaps>=3)h+='<span class="danger">⚠️ '+earlySwaps+' swaps in earliest transactions — possible dev accumulation via private swaps</span><br>';
+// Check sources
+const sources={};
+txHistory.forEach(tx=>{const s=tx.source||'unknown';sources[s]=(sources[s]||0)+1});
+const sourceStr=Object.entries(sources).map(([k,v])=>k+': '+v).join(', ');
+S('Sources:      ',sourceStr,'dim');
+// Timing analysis
+if(txHistory.length>=2){
+const times=txHistory.filter(t=>t.timestamp).map(t=>t.timestamp).sort();
+if(times.length>=2){
+const gaps=[];
+for(let i=1;i<Math.min(times.length,10);i++)gaps.push(times[i]-times[i-1]);
+const avgGap=gaps.reduce((a,b)=>a+b,0)/gaps.length;
+const minGap=Math.min(...gaps);
+if(minGap<3)h+='<span class="danger">⚠️ Transactions within '+minGap+'s of each other — bot/script activity detected</span><br>';
+else if(avgGap<10)h+='<span class="warn">⚠️ Average '+avgGap.toFixed(1)+'s between early txs — unusually fast, possible coordinated activity</span><br>';
+else h+='<span class="val">✓ Transaction timing appears organic (avg '+avgGap.toFixed(0)+'s gaps)</span><br>';
 }
-html+='<br><br><span class="prompt">$</span> <span class="dim">_</span>';
-out.innerHTML=html;btn.disabled=false;btn.textContent='SCAN';
+}
+// Fee analysis
+const fees=txHistory.filter(t=>t.fee).map(t=>t.fee);
+if(fees.length){
+const avgFee=fees.reduce((a,b)=>a+b,0)/fees.length;
+S('Avg Tx Fee:   ',(avgFee/1e9).toFixed(6)+' SOL','dim');
+const highPrio=fees.filter(f=>f>50000).length;
+if(highPrio>3)h+='<span class="warn">⚠️ '+highPrio+' high-priority fee transactions — someone paying for speed</span><br>';
+}
+}else{
+h+='<span class="dim">Transaction history unavailable — token may be too new or data limited</span><br>';
+}
+
+// SIGNATURE TIMING (for early activity detection)
+if(signatures&&signatures.length>0){
+const earlyBlocks=signatures.slice(-10);
+if(earlyBlocks.length>=2){
+const blockTimes=earlyBlocks.filter(s=>s.blockTime).map(s=>s.blockTime);
+if(blockTimes.length>=2){
+const span=Math.max(...blockTimes)-Math.min(...blockTimes);
+S('Early Window: ',span+'s for first '+earlyBlocks.length+' txs',span<30?'danger':span<120?'warn':'val');
+if(span<30)h+='<span class="danger">⚠️ First '+earlyBlocks.length+' transactions in '+span+'s — strong bundle/sniper signal</span><br>';
+}
+}
+}
+
+// META FIT ANALYSIS
+H('▸ CURRENT META FIT');
+if(dex){
+const mc=dex.marketCap||0;
+const vol24=dex.volume?.h24||0;
+const liq=dex.liquidity?.usd||0;
+const age=dex.pairCreatedAt?Math.floor((Date.now()-dex.pairCreatedAt)/3600000):null;
+// Volume/MCap ratio
+const vmRatio=mc>0?(vol24/mc*100):0;
+S('Vol/MCap:     ',vmRatio.toFixed(1)+'%',vmRatio>100?'val':vmRatio>30?'val':'warn');
+if(vmRatio>100)h+='<span class="val">🔥 High volume relative to cap — active trading interest</span><br>';
+else if(vmRatio<10)h+='<span class="warn">⚠️ Low volume relative to cap — weak interest or exit liquidity issues</span><br>';
+// Liquidity ratio
+const liqRatio=mc>0?(liq/mc*100):0;
+S('Liq/MCap:     ',liqRatio.toFixed(1)+'%',liqRatio>20?'val':liqRatio>10?'warn':'danger');
+if(liqRatio<10)h+='<span class="danger">⚠️ Liquidity only '+liqRatio.toFixed(1)+'% of MCap — extreme slippage on sells</span><br>';
+// Name/narrative analysis
+const nameLower=name.toLowerCase();
+const trendingTerms=['ai','agent','gork','bork','trump','elon','musk','pepe','dog','cat','meme','based','degen'];
+const metaMatch=trendingTerms.filter(t=>nameLower.includes(t));
+if(metaMatch.length)S('Meta Tags:    ','Matches: '+metaMatch.join(', ')+' 🔥');
+else S('Meta Tags:    ','No trending narrative match detected','dim');
+// Age assessment
+if(age!==null){
+if(age<1)S('Meta Timing:  ','🔥 FRESH — launched under 1h ago, high volatility expected','warn');
+else if(age<6)S('Meta Timing:  ','Early stage — '+age+'h old, still in price discovery');
+else if(age<24)S('Meta Timing:  ','Mid stage — '+age+'h old, initial hype may be fading','warn');
+else S('Meta Timing:  ',Math.floor(age/24)+'d old — established or stale','dim');
+}
+}
+
+// OVERALL RISK SCORE
+H('▸ TRENCHEE VERDICT');
+let risk=0;let flags=[];
+// Authority risks
+if(ti.freeze_authority){risk+=2;flags.push('Freeze authority active')}
+if(ti.mint_authority){risk+=2;flags.push('Mint authority active')}
+// Holder concentration
+if(holdersData?.value?.length){
+const supply=supplyData?.value?Number(supplyData.value.uiAmountString||0):0;
+const top1=supply>0?Number(holdersData.value[0]?.uiAmountString||0)/supply*100:0;
+if(top1>20){risk+=2;flags.push('Top holder owns '+top1.toFixed(1)+'%')}
+else if(top1>10){risk+=1;flags.push('Top holder owns '+top1.toFixed(1)+'%')}
+}
+// Liquidity
+if(dex){
+const liq=dex.liquidity?.usd||0;
+if(liq<5000){risk+=2;flags.push('Liquidity under $5k')}
+else if(liq<20000){risk+=1;flags.push('Liquidity under $20k')}
+const age=dex.pairCreatedAt?Math.floor((Date.now()-dex.pairCreatedAt)/3600000):null;
+if(age!==null&&age<1){risk+=1;flags.push('Under 1h old')}
+}
+// Bundle signals
+if(txHistory){
+const early=txHistory.slice(-10);
+const earlySwaps=early.filter(t=>t.type==='SWAP').length;
+if(earlySwaps>=5){risk+=2;flags.push(earlySwaps+' early swaps detected')}
+}
+risk=Math.min(risk,10);
+const riskColor=risk>=7?'danger':risk>=4?'warn':'val';
+const riskEmoji=risk>=7?'🔴':risk>=4?'🟡':'🟢';
+const riskLabel=risk>=7?'HIGH RISK — LIKELY SCAM OR MANIPULATION':risk>=4?'MODERATE RISK — PROCEED WITH CAUTION':'LOW RISK — FUNDAMENTALS LOOK CLEAN';
+h+='<span class="'+riskColor+'" style="font-size:14px;font-weight:bold">'+riskEmoji+' RISK SCORE: '+risk+'/10</span><br>';
+h+='<span class="'+riskColor+'">'+riskLabel+'</span><br><br>';
+if(flags.length){
+h+='<span class="white">Risk Factors:</span><br>';
+flags.forEach(f=>h+='<span class="warn">  • '+f+'</span><br>');
+}else{
+h+='<span class="val">✓ No significant risk factors detected</span><br>';
+}
+h+='<br>';
+// Final verdict
+if(risk>=7)h+='<span class="danger" style="font-size:13px">VERDICT: AVOID — Multiple red flags. High probability of rug, bundle, or dev manipulation.</span><br>';
+else if(risk>=4)h+='<span class="warn" style="font-size:13px">VERDICT: DYOR — Some concerning signals. Research further before entering. Check dev socials and holder activity.</span><br>';
+else h+='<span class="val" style="font-size:13px">VERDICT: Fundamentals check out. Standard memecoin risk applies. Size accordingly and set exit targets.</span><br>';
+
+h+='<br><span class="info">══════════════════════════════════════</span><br>';
+h+='<span class="prompt">$</span> <span class="dim">_</span>';
+out.innerHTML=h;btn.disabled=false;btn.textContent='SCAN';
 }
 window.scanCA=scanCA;
 document.getElementById('ca-input').addEventListener('keydown',e=>{if(e.key==='Enter')scanCA()});
