@@ -659,21 +659,11 @@ S('DEX Pairs:    ',allPairs.length+' found');
 h+='<span class="warn">No market data found — token may not be trading yet or is pre-bonding curve.</span><br>';
 }
 
-// SUPPLY & AUTHORITIES
-H('▸ CONTRACT SECURITY');
+// Supply info (no security flags — standard on pump.fun)
 const ti=asset?.token_info||{};
 if(supplyData?.value){
 const supply=Number(supplyData.value.uiAmountString||0);
-S('Total Supply: ',supply.toLocaleString());
-S('Decimals:     ',String(supplyData.value.decimals||0));
-}
-if(ti.freeze_authority)S('Freeze Auth:  ',ti.freeze_authority.slice(0,12)+'... (standard on pump.fun)','dim');
-else S('Freeze Auth:  ','None ✓');
-if(ti.mint_authority)S('Mint Auth:    ',ti.mint_authority.slice(0,12)+'... (standard on pump.fun)','dim');
-else S('Mint Auth:    ','Renounced ✓');
-if(asset?.authorities?.length){
-S('Authorities:  ',asset.authorities.length+' detected');
-asset.authorities.forEach(a=>{h+='<span class="dim">  └ '+a.scopes?.join(',')+': '+(a.address?.slice(0,12)||'?')+'...</span><br>'});
+S('Supply:       ',supply.toLocaleString());
 }
 
 // HOLDER DISTRIBUTION & CONCENTRATION
